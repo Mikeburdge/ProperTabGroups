@@ -49,8 +49,3 @@ For support, feature requests, or to report a bug, please use the **Issues** sec
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
-
-## Acknowledgments
-
-- All contributors who have helped shape **ProperTabGroups** into what it is today.
-- The Visual Studio SDK team for their extensive documentation and support.
