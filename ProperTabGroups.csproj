@@ -49,9 +49,7 @@
     <Compile Include="Commands\RunningDocTableEventsHandler.cs" />
     <Compile Include="Commands\Utility.cs" />
     <Compile Include="Commands\WindowModifyingSubsystem.cs" />
-    <Compile Include="Commands\WindowsStateChecker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Commands\MyCommand.cs" />
     <Compile Include="ProperTabGroupsPackage.cs" />
     <Compile Include="source.extension.cs">
       <AutoGen>True</AutoGen>

@@ -12,7 +12,7 @@ namespace ProperTabGroups
     /// </summary>
     internal sealed partial class PackageGuids
     {
-        public const string ProperTabGroupsString = "fae1ce7b-69bf-42af-b44e-159bc6294566";
+        public const string ProperTabGroupsString = "2d9ca8ed-e383-4bd5-9069-0ecf5029c62d";
         public static Guid ProperTabGroups = new Guid(ProperTabGroupsString);
     }
     /// <summary>

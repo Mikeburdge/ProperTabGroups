@@ -86,11 +86,11 @@ public class RunningDocTableEventsHandler : IVsRunningDocTableEvents
 
     public int OnBeforeLastDocumentUnlock(uint docCookie, uint dwRDTLockType, uint dwReadLocksRemaining, uint dwEditLocksRemaining)
     {
-        throw new NotImplementedException();
+        return 0;
     }
 
     public int OnAfterDocumentWindowHide(uint docCookie, IVsWindowFrame pFrame)
     {
-        throw new NotImplementedException();
+        return 0;
     }
 }

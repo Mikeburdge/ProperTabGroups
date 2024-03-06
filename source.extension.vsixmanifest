@@ -3,7 +3,7 @@
     <Metadata>
         <Identity Id="ProperTabGroups.c2c6a391-b567-4dfd-99af-327ca6595cd5" Version="1.0" Language="en-US" Publisher="Michael Burdge" />
         <DisplayName>ProperTabGroups</DisplayName>
-        <Description>Empty VSIX Project.</Description>
+        <Description xml:space="preserve">Empty VSIX Project.</Description>
         <Icon>Resources\Icon.png</Icon>
         <PreviewImage>Resources\Icon.png</PreviewImage>
     </Metadata>
