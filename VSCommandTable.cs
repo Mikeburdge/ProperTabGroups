@@ -12,7 +12,7 @@ namespace ProperTabGroups
     /// </summary>
     internal sealed partial class PackageGuids
     {
-        public const string ProperTabGroupsString = "55fd3ffc-fff4-4d9d-94bb-39b88bd35139";
+        public const string ProperTabGroupsString = "a60e9b96-e5a8-4548-a31f-d588bcb0c091";
         public static Guid ProperTabGroups = new Guid(ProperTabGroupsString);
     }
     /// <summary>
@@ -20,7 +20,6 @@ namespace ProperTabGroups
     /// </summary>
     internal sealed partial class PackageIds
     {
-        public const int MyMenuGroup = 0x0001;
         public const int MyCommand = 0x0100;
     }
 }
