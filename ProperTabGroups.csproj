@@ -53,6 +53,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>source.extension.vsixmanifest</DependentUpon>
     </Compile>
+    <Compile Include="TabGroupScripts\TabInfo.cs" />
     <Compile Include="VSCommandTable.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -79,12 +80,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ToolWindows\MyToolWindow.cs" />
-    <Page Include="ToolWindows\MyToolWindowControl.xaml">
+    <Page Include="ToolWindows\ProperTabGroupsWindowControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Compile Include="ToolWindows\MyToolWindowControl.xaml.cs">
-      <DependentUpon>MyToolWindowControl.xaml</DependentUpon>
+    <Compile Include="ToolWindows\ProperTabGroupsWindowControl.xaml.cs">
+      <DependentUpon>ProperTabGroupsWindowControl.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -101,6 +102,7 @@
     <PackageReference Include="Community.VisualStudio.Toolkit.17" Version="17.0.507" ExcludeAssets="Runtime" />
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.9.3168" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

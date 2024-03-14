@@ -14,8 +14,8 @@
         <Icon guid="ImageCatalogGuid" id="ToolWindow" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
-          <ButtonText>My Tool Window</ButtonText>
-          <LocCanonicalName>.View.MyToolWindow</LocCanonicalName>
+          <ButtonText>Proper Tab Groups</ButtonText>
+          <LocCanonicalName>.View.ProperTabGroups</LocCanonicalName>
         </Strings>
       </Button>
     </Buttons>

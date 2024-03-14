@@ -8,13 +8,13 @@ namespace ProperTabGroups
 {
     public class MyToolWindow : BaseToolWindow<MyToolWindow>
     {
-        public override string GetTitle(int toolWindowId) => "My Tool Window";
+        public override string GetTitle(int toolWindowId) => "Proper Tab Groups";
 
         public override Type PaneType => typeof(Pane);
 
         public override Task<FrameworkElement> CreateAsync(int toolWindowId, CancellationToken cancellationToken)
         {
-            return Task.FromResult<FrameworkElement>(new MyToolWindowControl());
+            return Task.FromResult<FrameworkElement>(new ProperTabGroupsWindowControl());
         }
 
         [Guid("7c1add1a-58b8-4d25-b97f-9c366a501265")]
