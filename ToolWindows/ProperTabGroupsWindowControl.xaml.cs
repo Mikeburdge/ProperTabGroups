@@ -1,14 +1,35 @@
 ﻿using System.Collections.Generic;
 using ProperTabGroups.Scripts;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Windows.Controls;
 using Window = EnvDTE.Window;
+using ProperTabGroups.ToolWindows;
 
 namespace ProperTabGroups
 {
-    public partial class ProperTabGroupsWindowControl : UserControl
+    // Define the ViewModel for your window
+    public class MainWindowViewModel
     {
-        public ObservableCollection<TabGroup> TabGroups { get; set; }
+        public List<TabInfo> Tabs { get; set; }
+
+        public MainWindowViewModel()
+        {
+            // Initialize the ObservableCollection
+            Tabs = new List<TabInfo>();
+
+            var documentWell = TabGroupsSubsystem.Instance.LocalDocumentWell;
+
+            foreach (var tabInfo in documentWell)
+            {
+                Tabs.Add(tabInfo);
+            }
+        }
+    }
+
+    public partial class ProperTabGroupsWindowControl : UserControl, INotifyCollectionChanged
+    {
+        public List<TabGroup> TabGroups { get; set; }
         public ProperTabGroupsWindowControl()
         {
             InitializeComponent();
@@ -17,28 +38,12 @@ namespace ProperTabGroups
             DataContext = new MainWindowViewModel();
         }
 
-        // Define the ViewModel for your window
-        public class MainWindowViewModel
-        {
-            public ObservableCollection<TabInfo> Tabs { get; set; }
-
-            public MainWindowViewModel()
-            {
-                // Initialize the ObservableCollection
-                Tabs = new ObservableCollection<TabInfo>();
-
-                var listOfWindows = ProperTabGroupsPackage.AllOpenDocumentWindows;
-                
-                foreach (var window in listOfWindows)
-                {
-                    Tabs.Add(new TabInfo(window, []));
-                }
-            }
-        }
 
         private void ListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
 
         }
+
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
     }
 }

@@ -7,16 +7,28 @@ using EnvDTE;
 
 namespace ProperTabGroups.Scripts
 {
-    public class TabGroup()
+    public class TabGroup
     {
-        public TabInfo[] TabsInGroup;
-        public string[] ThisGroupsFilters;
-
+        public List<TabInfo> TabsInGroup { get; set; }
+        public List<string> ThisGroupsFilters { get; set; }
+        public string Name { get; set; }
+        public bool bIsLocked { get; set; }
+        public bool IsVisible { get; set; }
+        public string ColourCode { get; set; }
     }
 
-    public class TabInfo(Window window, string[] filters)
+    public class TabInfo
     {
-        public Window Window = window;
-        public string[] Filters = filters;
+        public Window Window { get; set; }
+        public string[] Filters { get; set; }
+        // Property to hold the window's name
+        public string WindowName => Window.Caption;
+
+        public TabInfo(Window window, string[] filters)
+        {
+            Window = window;
+            Filters = filters;
+        }
     }
+
 }

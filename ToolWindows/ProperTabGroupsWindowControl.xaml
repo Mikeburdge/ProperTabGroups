@@ -3,26 +3,23 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:imaging="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.Imaging"
-             xmlns:theming="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Imaging"
-             xmlns:util="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Utilities"
-             xmlns:catalog="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.ImageCatalog"
-             xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
-             xmlns:local="clr-namespace:ProperTabGroups"
-             toolkit:Themes.UseVsTheme="True"
+             xmlns:c="clr-namespace:ProperTabGroups" 
+             xmlns:toolWindows="clr-namespace:ProperTabGroups.ToolWindows"
              mc:Ignorable="d"
-             d:DesignHeight="300"
-             d:DesignWidth="300"
-             Name="ProperTabGroupsWindow">
+             d:DesignHeight="300" d:DesignWidth="300">
+    <UserControl.Resources>
+        <toolWindows:CurrentlyActiveTabGroups x:Key="ActiveTabGroups"/>
+    </UserControl.Resources>
+    <UserControl.DataContext>
+        <c:TabGroupsSubsystem />
+    </UserControl.DataContext>
     <Grid>
-        <StackPanel Orientation="Vertical">
-            <ListView Height="300"  ItemsSource="{Binding RelativeSource={RelativeSource Self}}" SelectionChanged="ListView_SelectionChanged">
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn/>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-        </StackPanel>
+        <ListView ItemsSource="{Binding LocalDocumentWell}">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn DisplayMemberBinding="{Binding Window.Caption}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
     </Grid>
 </UserControl>
