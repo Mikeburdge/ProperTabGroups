@@ -10,9 +10,9 @@
     <UserControl.Resources>
         <toolWindows:CurrentlyActiveTabGroups x:Key="ActiveTabGroups"/>
     </UserControl.Resources>
-    <UserControl.DataContext>
+    <!--<UserControl.DataContext>
         <c:TabGroupsSubsystem />
-    </UserControl.DataContext>
+    </UserControl.DataContext>-->
     <Grid>
         <ListView ItemsSource="{Binding LocalDocumentWell}">
             <ListView.View>

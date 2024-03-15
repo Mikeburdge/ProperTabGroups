@@ -8,7 +8,6 @@ using ProperTabGroups.ToolWindows;
 
 namespace ProperTabGroups
 {
-    // Define the ViewModel for your window
     public class MainWindowViewModel
     {
         public List<TabInfo> Tabs { get; set; }
@@ -27,7 +26,7 @@ namespace ProperTabGroups
         }
     }
 
-    public partial class ProperTabGroupsWindowControl : UserControl, INotifyCollectionChanged
+    public partial class ProperTabGroupsWindowControl : UserControl
     {
         public List<TabGroup> TabGroups { get; set; }
         public ProperTabGroupsWindowControl()
@@ -43,7 +42,5 @@ namespace ProperTabGroups
         {
 
         }
-
-        public event NotifyCollectionChangedEventHandler CollectionChanged;
     }
 }
