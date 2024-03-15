@@ -33,8 +33,10 @@ namespace ProperTabGroups
         {
             InitializeComponent();
 
+            TabGroupsSubsystem tabsSubsystem = TabGroupsSubsystem.Instance;
+
             // Set the DataContext for the window
-            DataContext = new MainWindowViewModel();
+            DataContext = tabsSubsystem;
         }
 
 
