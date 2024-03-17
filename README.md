@@ -6,8 +6,7 @@
 
 ## Features
 
-- **Dynamic Tab Filtering**: Configure filters for tabs based on file type, project, custom patterns, and more, automatically organizing tabs into corresponding groups.
-- **Custom Filter Groups**: Create filter groups with custom names and criteria tailored to specific workflow needs.
+- **Custom Filter Groups**: Create filter groups with custom names and criteria tailored to specific workflow needs, automatically organizing tabs into corresponding groups.
 - **Filter Criteria Customization**: Define the filter criteria for each group using parameters such as filename patterns, modification status, or custom tags.
 - **Group Visibility Controls**: Toggle filter groups' visibility to manage workspace clutter and enhance focus.
 - **Custom Group Icons and Color Coding**: Assign unique icons and colors to each group for easy identification.
