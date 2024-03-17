@@ -55,7 +55,6 @@
       <DependentUpon>source.extension.vsixmanifest</DependentUpon>
     </Compile>
     <Compile Include="TabGroupScripts\TabInfo.cs" />
-    <Compile Include="ToolWindows\CurrentlyActiveTabGroups.cs" />
     <Compile Include="VSCommandTable.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

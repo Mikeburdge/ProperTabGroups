@@ -2,15 +2,8 @@
 global using Microsoft.VisualStudio.Shell;
 global using System;
 global using Task = System.Threading.Tasks.Task;
-using System.Collections.Generic;
-using EnvDTE;
 using System.Runtime.InteropServices;
 using System.Threading;
-using ProperTabGroups.Scripts;
-using System.Collections.ObjectModel;
-using System.Dynamic;
-using System.Windows.Controls;
-using ProperTabGroups.ToolWindows;
 
 namespace ProperTabGroups
 {
@@ -29,8 +22,6 @@ namespace ProperTabGroups
             await this.RegisterCommandsAsync();
 
             this.RegisterToolWindows();
-
-            TabGroupsSubsystem tabsSubsystem = TabGroupsSubsystem.Instance;
         }
     }
 }

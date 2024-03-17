@@ -1,11 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using System.Windows.Controls;
+using System.Windows.Data;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using ProperTabGroups.Scripts;
 
-namespace ProperTabGroups
+namespace ProperTabGroups.Subsystem
 {
     public class TabGroupsSubsystem
     {
@@ -13,7 +16,11 @@ namespace ProperTabGroups
         private ObservableCollection<TabGroup> _tabGroups;
         private DTE _dte;
 
-        public ObservableCollection<TabInfo> LocalDocumentWell { get; set; }
+        private ObservableCollection<TabInfo> _localDocumentWell;
+
+        public ObservableCollection<TabInfo> GetDocumentWell() => _localDocumentWell;
+
+        public CollectionViewSource LocalDocumentWell { get; set; }
 
         public static TabGroupsSubsystem Instance => _instance ?? (_instance = new TabGroupsSubsystem());
 
@@ -22,14 +29,19 @@ namespace ProperTabGroups
             ThreadHelper.ThrowIfNotOnUIThread();
             _dte = Package.GetGlobalService(typeof(DTE)) as DTE;
             _tabGroups = new ObservableCollection<TabGroup>();
-            LocalDocumentWell = new ObservableCollection<TabInfo>();
+            _localDocumentWell = new ObservableCollection<TabInfo>();
+            LocalDocumentWell = new CollectionViewSource
+            {
+                Source = _localDocumentWell
+            };
+            LocalDocumentWell.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabInfo.WindowName)));
             Initialize();
         }
 
         private void Initialize()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            // Initialize your Tab Groups based on the current state of the IDE
+            // Initialize Tab Groups based on the current state of the IDE
 
             _dte.Events.SolutionEvents.Opened += SolutionOpened;
         }
@@ -41,7 +53,7 @@ namespace ProperTabGroups
             // Loop through all open document windows
             foreach (var window in _dte.Windows.Cast<Window>().Where(window => window.Kind.Equals("Document")))
             {
-                LocalDocumentWell.Add(new TabInfo(window, []));
+                _localDocumentWell.Add(new TabInfo(window, []));
             }
         }
 
@@ -118,6 +130,8 @@ namespace ProperTabGroups
             tabGroup.ColourCode = colorCode;
             // Update UI accordingly
         }
+
+
 
         // Additional methods as necessary for drag-and-drop, custom icons, etc.
     }
