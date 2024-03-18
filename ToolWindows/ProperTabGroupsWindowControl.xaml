@@ -26,15 +26,15 @@
 		<Style TargetType="ListViewItem">
 			<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
 			<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
-			<!--<Setter Property="FontFamily" Value="{DynamicResource {x:Static vsFonts.EnvironmentFontFamilyKey}}"/>
-			<Setter Property="FontSize" Value="{DynamicResource {x:Static vsFonts.EnvironmentFontSizeKey}}"/>-->
+			<Setter Property="FontFamily" Value="{DynamicResource {x:Static  vsShell:VsFonts.EnvironmentFontFamilyKey}}"/>
+            <Setter Property="FontSize" Value="{DynamicResource {x:Static vsShell:VsFonts.EnvironmentFontSizeKey}}"/>
 			<Style.Triggers>
 				<Trigger Property="IsSelected" Value="True">
-					<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.HighlightKey}}"/>
-					<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.HighlightTextKey}}"/>
+                    <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>
+					<!--<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.DebuggerDataTipActiveHighlightTextKey}}"/>-->
 				</Trigger>
 				<Trigger Property="IsMouseOver" Value="True">
-					<!--<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolWindowHoverKey}}"/>-->
+					<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>
 				</Trigger>
 			</Style.Triggers>
 		</Style>

@@ -28,7 +28,7 @@ namespace ProperTabGroups
 
     public partial class ProperTabGroupsWindowControl : UserControl
     {
-        private DTE _dte;
+        private readonly DTE _dte;
 
         private bool _bIsSelectionChangeProgrammatic;
 
@@ -42,6 +42,7 @@ namespace ProperTabGroups
             ThreadHelper.ThrowIfNotOnUIThread();
             _dte = Package.GetGlobalService(typeof(DTE)) as DTE;
 
+            if (_dte == null) return;
             _dte.Events.SolutionEvents.Opened += SolutionOpened;
             _dte.Events.WindowEvents.WindowActivated += WindowActivated;
         }
@@ -57,7 +58,8 @@ namespace ProperTabGroups
         private void WindowActivated(Window GotFocus, Window LostFocus)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            if (GotFocus != null && GotFocus.Kind.Equals("Document"))
+            // This "Pattern" below also checks if GotFocus is null
+            if (GotFocus is { Kind: "Document" })
             {
                 SelectTabGroupInListView(GotFocus.Caption);
             }
@@ -71,10 +73,10 @@ namespace ProperTabGroups
             {
                 return;
             }
-            var listView = sender as ListView;
+            ListView listView = sender as ListView;
             if (listView == null) return; // Safety check
 
-            var selectedTabInfo = listView.SelectedItem as TabInfo;
+            TabInfo selectedTabInfo = listView.SelectedItem as TabInfo;
             if (selectedTabInfo == null) return; // Safety check
 
 
@@ -87,34 +89,34 @@ namespace ProperTabGroups
 
         }
 
-        public void SelectTabGroupInListView(string activatedTabName)
+        private void SelectTabGroupInListView(string activatedTabName)
         {
             ObservableCollection<TabInfo> documentWell = TabGroupsSubsystem.Instance.GetDocumentWell();
 
             TabInfo matchingTabInfo = documentWell.FirstOrDefault(tabInfo => tabInfo.WindowName.Equals(activatedTabName));
-            if (matchingTabInfo != null)
+
+            if (matchingTabInfo == null) return;
+
+            // Set the flag before changing the selection
+            _bIsSelectionChangeProgrammatic = true;
+
+            try
             {
-                // Set the flag before changing the selection
-                _bIsSelectionChangeProgrammatic = true;
-
-                try
+                // Find the index
+                int index = documentWell.IndexOf(matchingTabInfo);
+                if (index >= 0)
                 {
-                    // Find the index
-                    int index = documentWell.IndexOf(matchingTabInfo);
-                    if (index >= 0)
-                    {
-                        // Set the selected item
-                        tabGroupsListView.SelectedIndex = index;
+                    // Set the selected item
+                    tabGroupsListView.SelectedIndex = index;
 
-                        // Ensure the item is visible
-                        tabGroupsListView.ScrollIntoView(tabGroupsListView.SelectedItem);
-                    }
+                    // Ensure the item is visible
+                    tabGroupsListView.ScrollIntoView(tabGroupsListView.SelectedItem);
                 }
-                finally
-                {
-                    // Reset the flag after changing the selection
-                    _bIsSelectionChangeProgrammatic = false;
-                }
+            }
+            finally
+            {
+                // Reset the flag after changing the selection
+                _bIsSelectionChangeProgrammatic = false;
             }
         }
 

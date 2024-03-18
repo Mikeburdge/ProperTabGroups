@@ -34,8 +34,22 @@ namespace ProperTabGroups.Subsystem
             {
                 Source = _localDocumentWell
             };
-            LocalDocumentWell.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabInfo.WindowName)));
+
+            HandleGroupFunctionality();
+
             Initialize();
+        }
+
+        private void HandleGroupFunctionality()
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            // Temporarily Grouping by WindowName until I can figure out a better way of grouping
+            LocalDocumentWell.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabInfo.WindowName)));
+
+            // Sorting documents by FileName
+            LocalDocumentWell.SortDescriptions.Add(new SortDescription(nameof(TabInfo.WindowName), ListSortDirection.Ascending));
+
         }
 
         private void Initialize()
