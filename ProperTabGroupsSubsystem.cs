@@ -4,23 +4,26 @@ using System.ComponentModel;
 using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Data;
+using CommunityToolkit.Mvvm.ComponentModel;
 using EnvDTE;
+using Microsoft.VisualStudio.Package;
 using Microsoft.VisualStudio.Shell;
-using ProperTabGroups.Scripts;
+using ProperTabGroups.TabGroupScripts;
+using Debugger = Community.VisualStudio.Toolkit.Debugger;
+using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
 
 namespace ProperTabGroups.Subsystem
 {
     public class TabGroupsSubsystem
     {
         private static TabGroupsSubsystem _instance;
-        private ObservableCollection<TabGroup> _tabGroups;
         private DTE _dte;
 
-        private ObservableCollection<TabInfo> _localDocumentWell;
+        public ObservableCollection<TabGroup> _groupsDocumentWell { get; set; }
 
-        public ObservableCollection<TabInfo> GetDocumentWell() => _localDocumentWell;
+        public CollectionViewSource GroupsDocumentWell { get; set; }
 
-        public CollectionViewSource LocalDocumentWell { get; set; }
+        public List<TabInfo> AllOpenDocuments;
 
         public static TabGroupsSubsystem Instance => _instance ?? (_instance = new TabGroupsSubsystem());
 
@@ -28,15 +31,14 @@ namespace ProperTabGroups.Subsystem
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             _dte = Package.GetGlobalService(typeof(DTE)) as DTE;
-            _tabGroups = new ObservableCollection<TabGroup>();
-            _localDocumentWell = new ObservableCollection<TabInfo>();
-            LocalDocumentWell = new CollectionViewSource
+            _groupsDocumentWell = new ObservableCollection<TabGroup>();
+            GroupsDocumentWell = new CollectionViewSource
             {
-                Source = _localDocumentWell
+                Source = _groupsDocumentWell
             };
+            AllOpenDocuments = new List<TabInfo>();
 
             HandleGroupFunctionality();
-
             Initialize();
         }
 
@@ -45,11 +47,10 @@ namespace ProperTabGroups.Subsystem
             ThreadHelper.ThrowIfNotOnUIThread();
 
             // Temporarily Grouping by WindowName until I can figure out a better way of grouping
-            LocalDocumentWell.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabInfo.WindowName)));
+            GroupsDocumentWell.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name)));
 
             // Sorting documents by FileName
-            LocalDocumentWell.SortDescriptions.Add(new SortDescription(nameof(TabInfo.WindowName), ListSortDirection.Ascending));
-
+            GroupsDocumentWell.SortDescriptions.Add(new SortDescription(nameof(TabInfo.WindowName), ListSortDirection.Ascending));
         }
 
         private void Initialize()
@@ -58,67 +59,88 @@ namespace ProperTabGroups.Subsystem
             // Initialize Tab Groups based on the current state of the IDE
 
             _dte.Events.SolutionEvents.Opened += SolutionOpened;
+
+            System.Threading.Thread t = new System.Threading.Thread(() =>
+            {
+                while (true)
+                {
+                    bool allowBreakpoint = false;
+
+                    if (allowBreakpoint)
+                    {
+                        System.Diagnostics.Debugger.Break();
+                    }
+                }
+            });
+            t.Start();
         }
 
         private void SolutionOpened()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
+            TabGroup allDocumentsGroup = new("All Documents", true);
             // Loop through all open document windows
-            foreach (var window in _dte.Windows.Cast<Window>().Where(window => window.Kind.Equals("Document")))
+            foreach (Window window in _dte.Windows.Cast<Window>().Where(window => window.Kind.Equals("Document")))
             {
-                _localDocumentWell.Add(new TabInfo(window, []));
+                AllOpenDocuments.Add(new TabInfo(window, [nameof(allDocumentsGroup.Name)]));
             }
+
+            // Trigger Sort Groups Action / Setup Constant Group Sorting based on filters
+            // For now I'm going to add it manually until I get shit up and running
+
+            foreach (TabInfo tab in AllOpenDocuments)
+            {
+                allDocumentsGroup._tabsInGroup.Add(tab);
+            }
+
+            _groupsDocumentWell.Add(allDocumentsGroup);
+            allDocumentsGroup.Name = "AllDocuments2";
+            _groupsDocumentWell.Add(allDocumentsGroup);
         }
 
-        public ObservableCollection<TabGroup> GetAllTabGroups()
+        public ObservableCollection<object> FilterAndGroupTabs(IEnumerable<TabInfo> tabs, string filter)
         {
-            return _tabGroups;
+            ObservableCollection<object> filteredAndGroupedTabs = new ObservableCollection<object>();
+
+            // Filter tabs based on the filter criteria
+            IEnumerable<TabInfo> filteredTabs = string.IsNullOrEmpty(filter) ? tabs : tabs.Where(tab => tab.Filters.Contains(filter));
+
+            IEnumerable<string> categories = filteredTabs
+                .SelectMany(tab => tab.Filters)
+                .Distinct();
+
+            foreach (string category in categories)
+            {
+                var group = new
+                {
+                    Category = category,
+                    Tabs = filteredTabs.Where(tab => tab.Filters.Contains(category)).ToList()
+                };
+
+                filteredAndGroupedTabs.Add(group);
+            }
+
+            return filteredAndGroupedTabs;
         }
 
-        public void CreateNewTabGroup(string groupName, List<string> filters, bool isLocked = false)
+        public void CreateNewTabGroup(string groupName, bool isLocked = false)
         {
             // Logic to create a new tab group
-            var newTabGroup = new TabGroup()
-            {
-                Name = groupName,
-                ThisGroupsFilters = filters,
-                bIsLocked = isLocked
-            };
+            TabGroup newTabGroup = new TabGroup(name: groupName, bIsLocked: isLocked);
 
             // Add to ObservableCollection
-            _tabGroups.Add(newTabGroup);
+            _groupsDocumentWell.Add(newTabGroup);
         }
 
         public void DeleteTabGroup(TabGroup tabGroup)
         {
             // Logic to delete a tab group
-            if (_tabGroups.Contains(tabGroup))
+            if (_groupsDocumentWell.Contains(tabGroup))
             {
-                _tabGroups.Remove(tabGroup);
+                _groupsDocumentWell.Remove(tabGroup);
             }
         }
-
-        public void AddTabToGroup(TabGroup tabGroup, Window window)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            // Ensure the tab isn't already part of another group
-            if (!_tabGroups.Any(tg => tg.TabsInGroup.Any(ti => ti.Window.Equals(window))))
-            {
-                tabGroup.TabsInGroup.Add(new TabInfo(window, new string[] { }));
-            }
-        }
-
-        public void RemoveTabFromGroup(TabGroup tabGroup, Window window)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            var tabToRemove = tabGroup.TabsInGroup.FirstOrDefault(t => t.Window.Equals(window));
-            if (tabToRemove != null)
-            {
-                tabGroup.TabsInGroup.Remove(tabToRemove);
-            }
-        }
-
         public void OrganizeTabsByGroup()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -128,14 +150,14 @@ namespace ProperTabGroups.Subsystem
         public void SetGroupVisibility(TabGroup tabGroup, bool isVisible)
         {
             // Logic to set visibility of a tab group
-            tabGroup.IsVisible = isVisible;
+            tabGroup.BIsVisible = isVisible;
             // Implement the actual UI visibility change
         }
 
         public void LockGroup(TabGroup tabGroup, bool isLocked)
         {
             // Logic to lock/unlock a tab group to prevent accidental changes
-            tabGroup.bIsLocked = isLocked;
+            tabGroup.BIsLocked = isLocked;
         }
 
         public void ApplyColorSchemeToGroup(TabGroup tabGroup, string colorCode)
@@ -145,7 +167,16 @@ namespace ProperTabGroups.Subsystem
             // Update UI accordingly
         }
 
-
+        public bool AddFilter(TabInfo tabInfo, string Filter)
+        {
+            if (tabInfo.Filters.Contains(Filter))
+            {
+                return false;
+            }
+            
+            tabInfo.Filters.Add(Filter);
+            return true;
+        }
 
         // Additional methods as necessary for drag-and-drop, custom icons, etc.
     }

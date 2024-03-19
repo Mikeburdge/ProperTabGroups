@@ -3,69 +3,181 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:c="clr-namespace:ProperTabGroups"
-			 xmlns:s="clr-namespace:ProperTabGroups.Subsystem"
              xmlns:vsShell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
-             xmlns:vsFonts="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+             xmlns:tabGroupScripts="clr-namespace:ProperTabGroups.TabGroupScripts"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300"
              d:Background="White"
 			 x:Name="window"
              DataContext="{Binding ElementName=window, Path=ViewModel}">
-	<!--<UserControl.DataContext>
-        <s:TabGroupsSubsystem />
-    </UserControl.DataContext>-->
 
-	<UserControl.Resources>
-		 <!--VS Theme ListView--> 
-		<Style TargetType="ListView">
-			<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
-			<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
-		</Style>
+    <UserControl.Resources>
+        <!--VS Theme ListView-->
+        <Style TargetType="ListView">
+            <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
+            <!-- Style to remove margin for the nested ListView -->
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <!-- Remove indentation for the nested ListView -->
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+        </Style>
 
-		<Style TargetType="ListViewItem">
-			<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
-			<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
-			<Setter Property="FontFamily" Value="{DynamicResource {x:Static  vsShell:VsFonts.EnvironmentFontFamilyKey}}"/>
+        <Style TargetType="ListViewItem">
+            <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
+            <Setter Property="FontFamily" Value="{DynamicResource {x:Static  vsShell:VsFonts.EnvironmentFontFamilyKey}}"/>
             <Setter Property="FontSize" Value="{DynamicResource {x:Static vsShell:VsFonts.EnvironmentFontSizeKey}}"/>
-			<Style.Triggers>
-				<Trigger Property="IsSelected" Value="True">
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>
-					<!--<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.DebuggerDataTipActiveHighlightTextKey}}"/>-->
-				</Trigger>
-				<Trigger Property="IsMouseOver" Value="True">
-					<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>
-				</Trigger>
-			</Style.Triggers>
-		</Style>
+                    <!--<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.DebuggerDataTipActiveHighlightTextKey}}"/>-->
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
 
-		<Style TargetType="ScrollBar">
-			<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ScrollBarThumbBackgroundKey}}"/>
-		</Style>
-	</UserControl.Resources>
+        <Style TargetType="ScrollBar">
+            <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ScrollBarThumbBackgroundKey}}"/>
+        </Style>
 
-	<Grid>
+        <ContextMenu x:Key="TabGroupContextMenu">
+            <MenuItem Header="Rename" Click="AddFilter_OnClick"></MenuItem>
+        </ContextMenu>
+        <ContextMenu x:Key="TabInfoContextMenu">
+            <MenuItem Header="Add filter" Click="AddFilter_OnClick"></MenuItem>
+        </ContextMenu>
 
-		<!-- Title for the list of open documents -->
-		<TextBlock Text="All Open Documents" Foreground="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}" FontWeight="Normal" FontSize="14" Margin="5"/>
-		<ListView x:Name="tabGroupsListView" Margin="0,25,0,0" d:ItemsSource="{d:SampleData ItemCount=2}" ItemsSource="{Binding LocalDocumentWell.View}" SelectionChanged="ListView_SelectionChanged">
 
-			<ListView.GroupStyle>
-				<GroupStyle>
-					
-				</GroupStyle>
-			</ListView.GroupStyle>
+    </UserControl.Resources>
 
-			<ListView.View>
-				<GridView>
-					<GridView.ColumnHeaderContainerStyle>
-						<Style TargetType="{x:Type GridViewColumnHeader}">
-							<Setter Property="Visibility" Value="Collapsed" />
-						</Style>
-					</GridView.ColumnHeaderContainerStyle>
-					<GridViewColumn DisplayMemberBinding="{Binding WindowName}"/>
-				</GridView>
-			</ListView.View>
-		</ListView>
-	</Grid>
+
+
+    <StackPanel Orientation="Vertical">
+        <!-- Button and Popup for adding a new tab group -->
+        <Button Content="Add Tab Group" Click="AddNewGroup"/>
+        <Popup Name="InputPopup" Placement="RelativePoint" Width="200" Height="100" IsOpen="False">
+            <Border BorderBrush="Black" BorderThickness="1" Background="White">
+                <StackPanel Margin="10">
+                    <TextBlock Text="Enter a string:"/>
+                    <TextBox Name="InputTextBox"/>
+                    <Button Content="Submit" Margin="0,10,0,0" Click="SubmitPopup_Click"/>
+                </StackPanel>
+            </Border>
+        </Popup>
+
+        <Popup Name="ListOfFiltersPopup" Placement="MousePoint" Width="200" Height="100" IsOpen="False">
+            <Border BorderBrush="Black" BorderThickness="1" Background="White">
+                <StackPanel Margin="10">
+                    <ListView x:Name="FiltersList">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </Border>
+        </Popup>
+
+        <!-- Title for the list of open documents -->
+        <ListView x:Name="TabGroupsListView" Margin="0,0,0,0" d:ItemsSource="{d:SampleData ItemCount=2}" ItemsSource="{Binding GroupsDocumentWell.View}" MouseRightButtonDown="TabGroupsListView_OnMouseRightButtonDown">
+            <ListView.GroupStyle>
+                <GroupStyle />
+            </ListView.GroupStyle>
+
+
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+
+                    <!-- Style to remove padding and border for the ListViewItem -->
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+
+                    <!-- Style to select the tab when we want it selected -->
+                    <Setter Property="IsSelected" Value="{Binding _IsSelected, Mode=TwoWay}" />
+
+                    <!-- Style to remove focus and more for the ListViewItem -->
+                    <Setter Property="Focusable" Value="false"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+
+                    <!-- Setting Context Menu for List View Items-->
+                    <Setter Property="ContextMenu" Value="{StaticResource TabGroupContextMenu}"/>
+
+                    <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
+                    <Setter Property="FontFamily" Value="{DynamicResource {x:Static  vsShell:VsFonts.EnvironmentFontFamilyKey}}"/>
+                    <Setter Property="FontSize" Value="{DynamicResource {x:Static vsShell:VsFonts.EnvironmentFontSizeKey}}"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background"
+                                    Value="Transparent" />
+                            <Setter Property="BorderBrush"
+                                    Value="Transparent" />
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.DebuggerDataTipActiveHighlightTextKey}}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </ListView.ItemContainerStyle>
+
+
+            <ListView.ItemTemplate>
+                <DataTemplate DataType="{x:Type tabGroupScripts:TabGroup}">
+
+                    <!--<Expander Header="{Binding Name}" IsExpanded="{Binding BIsVisible}">-->
+                    <ListView x:Name="ItemContainerList" ItemsSource="{Binding TabsInGroup.View}" SelectionChanged="ListView_SelectionChanged">
+
+
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+
+                                <!-- Style to remove padding and border for the ListViewItem -->
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+
+                                <!-- Style to select the tab when we want it selected -->
+                                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+
+                                <!-- Style to remove focus and more for the ListViewItem -->
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+
+                                <!-- Setting Context Menu for nested List View Items-->
+                                <Setter Property="ContextMenu" Value="{StaticResource TabInfoContextMenu}"/>
+
+                                <!-- Setting the background styles -->
+                                <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
+                                <Setter Property="FontFamily" Value="{DynamicResource {x:Static  vsShell:VsFonts.EnvironmentFontFamilyKey}}"/>
+                                <Setter Property="FontSize" Value="{DynamicResource {x:Static vsShell:VsFonts.EnvironmentFontSizeKey}}"/>
+                                <Style.Triggers>
+
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+
+
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding WindowName}" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                        <!--<GridViewColumn DisplayMemberBinding="{Binding WindowName}"/>-->
+                    </ListView>
+                    <!--</Expander>-->
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </StackPanel>
+
 </UserControl>
