@@ -5,14 +5,29 @@ using System.Runtime.CompilerServices;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using EnvDTE;
+using ProperTabGroups.Subsystem;
 
 namespace ProperTabGroups.TabGroupScripts
 {
-    public class TabGroup
+    public class TabGroup : INotifyPropertyChanged
     {
-        public ObservableCollection<TabInfo> _tabsInGroup;
+        private ObservableCollection<TabInfo> _tabsInGroupSource;
 
-        //public ref ObservableCollection<TabInfo> GetMutableLocalTabsInGroup() => ref _tabsInGroup;
+        public ObservableCollection<TabInfo> TabsInGroupSource
+        {
+            get => _tabsInGroupSource;
+            set
+            {
+                if (!Equals(_tabsInGroupSource, value))
+                {
+
+                    _tabsInGroupSource = value;
+                    OnPropertyChanged(nameof(TabsInGroupSource));
+
+                    OnTabsInGroupSourceChanged();
+                }
+            }
+        }
 
         public CollectionViewSource TabsInGroup { get; set; }
         // Used for filter matching
@@ -27,11 +42,25 @@ namespace ProperTabGroups.TabGroupScripts
             BIsLocked = bIsLocked;
             BIsVisible = bIsVisible;
 
-            _tabsInGroup = new ObservableCollection<TabInfo>();
+            TabsInGroupSource = new ObservableCollection<TabInfo>();
             TabsInGroup = new CollectionViewSource()
             {
-                Source = _tabsInGroup
+                Source = TabsInGroupSource
             };
+        }
+
+
+        private void OnTabsInGroupSourceChanged()
+        {
+            TabGroupsSubsystem.Instance.ValidateCurrentGroups();
+            TabGroupsSubsystem.Instance.RefreshAllGroupsAndTabs();
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 
@@ -52,7 +81,7 @@ namespace ProperTabGroups.TabGroupScripts
         }
         public Window Window { get; set; }
         public List<string> Filters { get; set; }
-        
+
         // Property to hold the window's name
         public string WindowName { get; set; }
         public string DocumentPath { get; set; }

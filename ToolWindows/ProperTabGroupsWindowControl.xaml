@@ -44,8 +44,52 @@
             <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ScrollBarThumbBackgroundKey}}"/>
         </Style>
 
+        <Style TargetType="ContextMenu">
+
+            <!-- Background and Foreground setters -->
+            <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
+
+            <!-- Additional styling for better theme matching -->
+            <Setter Property="BorderBrush" Value="{DynamicResource {x:Static vsShell:VsBrushes.CommandBarBorderKey}}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="MenuItem">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.MenuTextKey}}"/>
+                        <!-- Hover and Pressed States -->
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.CommandBarHoverOverSelectedKey}}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.CommandBarTextSelectedKey}}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.CommandBarMouseDownBackgroundBeginKey}}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.CommandBarTextSelectedKey}}"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+
+            <!-- Adjust the Popup part of the ContextMenu to ensure proper theming -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <StackPanel IsItemsHost="True"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <ContextMenu x:Key="TabGroupContextMenu">
             <MenuItem Header="Rename" Click="AddFilter_OnClick"></MenuItem>
+
         </ContextMenu>
         <ContextMenu x:Key="TabInfoContextMenu">
             <MenuItem Header="Add filter" Click="AddFilter_OnClick"></MenuItem>
@@ -60,7 +104,7 @@
         <!-- Button and Popup for adding a new tab group -->
         <Button Content="Add Tab Group" Click="AddNewGroup"/>
         <Popup Name="InputPopup" Placement="RelativePoint" Width="200" Height="100" IsOpen="False">
-            <Border BorderBrush="Black" BorderThickness="1" Background="White">
+            <Border BorderBrush="Black" BorderThickness="1" Background="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}">
                 <StackPanel Margin="10">
                     <TextBlock Text="Enter a string:"/>
                     <TextBox Name="InputTextBox"/>

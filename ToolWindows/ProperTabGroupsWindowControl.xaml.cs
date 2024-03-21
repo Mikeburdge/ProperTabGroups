@@ -1,37 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Windows.Controls;
 using ProperTabGroups.Subsystem;
-using System.Collections.ObjectModel;
 using EnvDTE;
 using System.Linq;
 using System.Windows.Media;
 using System.Windows;
 using System.Windows.Input;
-using Microsoft.VisualStudio.PlatformUI;
 using ProperTabGroups.TabGroupScripts;
 using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
 using Window = EnvDTE.Window;
 
 namespace ProperTabGroups
 {
-    //public class MainWindowViewModel
-    //{
-    //    public List<TabInfo> Tabs { get; set; }
-
-    //    public MainWindowViewModel()
-    //    {
-    //        // Initialize the ObservableCollection
-    //        Tabs = new List<TabInfo>();
-
-    //        var documentWell = TabGroupsSubsystem.Instance._localDocumentWell;
-
-    //        foreach (var tabInfo in documentWell)
-    //        {
-    //            Tabs.Add(tabInfo);
-    //        }
-    //    }
-    //}
-
     public partial class ProperTabGroupsWindowControl : UserControl
     {
         private readonly DTE _dte;
@@ -40,7 +20,6 @@ namespace ProperTabGroups
 
         public TabGroupsSubsystem ViewModel => TabGroupsSubsystem.Instance;
 
-        public List<TabGroup> TabGroups { get; set; }
         public ProperTabGroupsWindowControl()
         {
             InitializeComponent();
@@ -51,7 +30,10 @@ namespace ProperTabGroups
             if (_dte == null) return;
             _dte.Events.SolutionEvents.Opened += SolutionOpened;
             _dte.Events.WindowEvents.WindowActivated += WindowActivated;
+
+            ViewModel.GroupsListView = TabGroupsListView;
         }
+
 
         private void SolutionOpened()
         {
@@ -98,7 +80,28 @@ namespace ProperTabGroups
 
         private void ListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            //Assuming you have access to a collection of all ListView instances or can retrieve them
+
+            // Handles all selection changed directly from the ListViews
+            HandleClearingAllOtherSelectedItemsListViewOnly(sender);
+
+            ThreadHelper.ThrowIfNotOnUIThread();
+            // Check if the selection change is programmatic and ignore it if so
+            if (_bIsSelectionChangeProgrammatic)
+            {
+                return;
+            }
+            ListView localListView = sender as ListView;
+            if (localListView == null) return; // Safety check
+
+            TabInfo selectedTabInfo = localListView.SelectedItem as TabInfo;
+            if (selectedTabInfo == null) return; // Safety check
+
+            // Show File
+            _dte.ExecuteCommand("File.OpenFile",selectedTabInfo.DocumentPath);
+        }
+
+        private void HandleClearingAllOtherSelectedItemsListViewOnly(object sender)
+        {
             foreach (var currentListView in GetAllListViews(this))
             {
                 if (currentListView == sender) continue; // Check to avoid clearing the selection of the current ListView
@@ -109,75 +112,56 @@ namespace ProperTabGroups
 
                     if (currentTabInfo == null) continue;
 
-                    if (currentTabInfo.IsSelected) continue;
+                    if (currentTabInfo.Window.Visible)
+                    {
+                        continue;
+                    }
 
                     currentTabInfo.IsSelected = false;
                 }
             }
-
-            ThreadHelper.ThrowIfNotOnUIThread();
-            //// Check if the selection change is programmatic and ignore it if so
-            //if (_bIsSelectionChangeProgrammatic)
-            //{
-            //    return;
-            //}
-            ListView localListView = sender as ListView;
-            if (localListView == null) return; // Safety check
-
-            TabInfo selectedTabInfo = localListView.SelectedItem as TabInfo;
-            if (selectedTabInfo == null) return; // Safety check
-
-            if (selectedTabInfo.Window.Object == null)
-            {
-                _dte.ItemOperations.OpenFile(selectedTabInfo.DocumentPath, Constants.vsViewKindTextView);
-            }
-            else
-            {
-                selectedTabInfo.Window.Activate();
-            }
         }
+
         private void ListViewItem_Selected(object sender, System.Windows.RoutedEventArgs e)
         {
-
+            
         }
 
         private void ClearSelection()
         {
+            foreach (ListView currentListView in GetAllListViews(this))
+            {
+                foreach (object item in currentListView.Items)
+                {
+                    TabInfo currentTabInfo = item as TabInfo;
 
+                    if (currentTabInfo == null) continue;
+
+                    currentTabInfo.IsSelected = false;
+                }
+            }
         }
 
         private void SelectTabGroupInListView(string activatedTabName)
         {
+            List<TabInfo> documentWell = TabGroupsSubsystem.Instance.AllOpenDocuments;
 
-            //List<TabInfo> documentWell = TabGroupsSubsystem.Instance.AllOpenDocuments;
+            TabInfo matchingTabInfo = documentWell.FirstOrDefault(tabInfo => tabInfo.WindowName.Equals(activatedTabName));
 
+            if (matchingTabInfo == null) return;
 
-            //TabInfo matchingTabInfo = documentWell.FirstOrDefault(tabInfo => tabInfo.WindowName.Equals(activatedTabName));
+            // Set the flag before changing the selection
+            _bIsSelectionChangeProgrammatic = true;
 
-
-            //if (matchingTabInfo == null) return;
-
-
-            //// Set the flag before changing the selection
-            //_bIsSelectionChangeProgrammatic = true;
-
-            //try
-            //{
-            //    // Find the index
-            //    int index = documentWell.IndexOf(matchingTabInfo);
-
-            //    if (index < 0) return;
-            //    // Set the selected item
-            //    TabGroupsListView.SelectedIndex = index;
-
-            //    // Ensure the item is visible
-            //    TabGroupsListView.ScrollIntoView(TabGroupsListView.SelectedItem);
-            //}
-            //finally
-            //{
-            //    // Reset the flag after changing the selection
-            //    _bIsSelectionChangeProgrammatic = false;
-            //}
+            try
+            {
+                matchingTabInfo.IsSelected = true;
+            }
+            finally
+            {
+                // Reset the flag after changing the selection
+                _bIsSelectionChangeProgrammatic = false;
+            }
         }
 
         private void AddNewGroup(object sender, RoutedEventArgs e)
