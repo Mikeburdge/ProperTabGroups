@@ -3,10 +3,12 @@ using System.Windows.Controls;
 using ProperTabGroups.Subsystem;
 using EnvDTE;
 using System.Linq;
+using System.Runtime.Remoting.Channels;
 using System.Windows.Media;
 using System.Windows;
 using System.Windows.Input;
 using ProperTabGroups.TabGroupScripts;
+using SelectionChangedEventArgs = System.Windows.Controls.SelectionChangedEventArgs;
 using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
 using Window = EnvDTE.Window;
 
@@ -97,7 +99,7 @@ namespace ProperTabGroups
             if (selectedTabInfo == null) return; // Safety check
 
             // Show File
-            _dte.ExecuteCommand("File.OpenFile",selectedTabInfo.DocumentPath);
+            _dte.ExecuteCommand("File.OpenFile", selectedTabInfo.DocumentPath);
         }
 
         private void HandleClearingAllOtherSelectedItemsListViewOnly(object sender)
@@ -124,7 +126,7 @@ namespace ProperTabGroups
 
         private void ListViewItem_Selected(object sender, System.Windows.RoutedEventArgs e)
         {
-            
+
         }
 
         private void ClearSelection()
@@ -194,14 +196,38 @@ namespace ProperTabGroups
 
         private void AddFilter_OnClick(object sender, RoutedEventArgs e)
         {
-            TabInfo tab = sender as TabInfo;
-            if (tab == null) return; // return if this is not of type TabInfo
+            TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
 
+            IEnumerable<string> itemSource = ViewModel.GetAvailableTabGroupNames(selectedTabInfo);
 
+            if (!itemSource.Any()) return;
 
-            //ViewModel.AddFilter(tab, )
+            FiltersList.ItemsSource = itemSource;
+            ListOfFiltersPopup.IsOpen = true;
+        }
 
+        private void FiltersList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (FiltersList.SelectedItem is not string filter) return;
 
+            TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
+            if (selectedTabInfo != null)
+            {
+                TabGroupsSubsystem.AddFilter(selectedTabInfo, filter);
+                FiltersList.SelectedItem = null;
+                ViewModel.RealignTabsToFilteredGroups();
+
+                IEnumerable<string> itemSource = ViewModel.GetAvailableTabGroupNames(selectedTabInfo);
+
+                if (itemSource.Any())
+                {
+                    FiltersList.ItemsSource = itemSource;
+                }
+                else
+                {
+                    ListOfFiltersPopup.IsOpen = false;
+                }
+            }
         }
     }
 }

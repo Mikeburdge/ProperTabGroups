@@ -88,7 +88,7 @@
         </Style>
 
         <ContextMenu x:Key="TabGroupContextMenu">
-            <MenuItem Header="Rename" Click="AddFilter_OnClick"></MenuItem>
+            <MenuItem Header="Rename" ></MenuItem>
 
         </ContextMenu>
         <ContextMenu x:Key="TabInfoContextMenu">
@@ -113,24 +113,35 @@
             </Border>
         </Popup>
 
-        <Popup Name="ListOfFiltersPopup" Placement="MousePoint" Width="200" Height="100" IsOpen="False">
-            <Border BorderBrush="Black" BorderThickness="1" Background="White">
+        <Popup Name="ListOfFiltersPopup" Placement="MousePoint" Width="auto" Height="auto" IsOpen="False" StaysOpen="False"  >
+            <Border BorderBrush="Black" BorderThickness="1" Background="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}">
                 <StackPanel Margin="10">
-                    <ListView x:Name="FiltersList">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
+                    <ListView x:Name="FiltersList" SelectionChanged="FiltersList_OnSelectionChanged">
+                        <ListView.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" />
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                            </GroupStyle>
+                        </ListView.GroupStyle>
                     </ListView>
                 </StackPanel>
             </Border>
         </Popup>
 
         <!-- Title for the list of open documents -->
-        <ListView x:Name="TabGroupsListView" Margin="0,0,0,0" d:ItemsSource="{d:SampleData ItemCount=2}" ItemsSource="{Binding GroupsDocumentWell.View}" MouseRightButtonDown="TabGroupsListView_OnMouseRightButtonDown">
+        <ListView x:Name="TabGroupsListView" Margin="0,0,0,0" d:ItemsSource="{d:SampleData ItemCount=2}" ItemsSource="{Binding GroupsDocumentWell.View}">
+
             <ListView.GroupStyle>
-                <GroupStyle />
+                <GroupStyle>
+                    <GroupStyle.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" ContextMenu="{StaticResource TabGroupContextMenu}"/>
+                        </DataTemplate>
+                    </GroupStyle.HeaderTemplate>
+                </GroupStyle>
             </ListView.GroupStyle>
 
 
@@ -150,7 +161,7 @@
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
 
                     <!-- Setting Context Menu for List View Items-->
-                    <Setter Property="ContextMenu" Value="{StaticResource TabGroupContextMenu}"/>
+                    <!--<Setter Property="ContextMenu" Value="{StaticResource TabGroupContextMenu}"/>-->
 
                     <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
                     <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
@@ -177,7 +188,6 @@
 
                     <!--<Expander Header="{Binding Name}" IsExpanded="{Binding BIsVisible}">-->
                     <ListView x:Name="ItemContainerList" ItemsSource="{Binding TabsInGroup.View}" SelectionChanged="ListView_SelectionChanged">
-
 
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
