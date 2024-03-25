@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
@@ -11,15 +12,18 @@ using Microsoft.VisualStudio.PlatformUI.OleComponentSupport;
 using ProperTabGroups.TabGroupScripts;
 using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
 using Window = EnvDTE.Window;
+using System.Diagnostics;
 
 namespace ProperTabGroups.Subsystem
 {
-    public class TabGroupsSubsystem : INotifyPropertyChanged
+    public class ProperTabGroupsSubsystem : INotifyPropertyChanged
     {
-        private static TabGroupsSubsystem _instance;
+        private static ProperTabGroupsSubsystem _instance;
         private DTE _dte;
 
         private ObservableCollection<TabGroup> _groupsDocumentWellSource;
+
+        public const string UnassignedTabsGroupName = "Unassigned Tabs";
 
         public ObservableCollection<TabGroup> GroupsDocumentWellSource
         {
@@ -43,15 +47,13 @@ namespace ProperTabGroups.Subsystem
 
         public CollectionViewSource GroupsDocumentWell { get; set; }
 
-        public List<TabInfo> AllOpenDocuments;
+        public readonly List<TabInfo> AllOpenDocuments;
 
         public ListView GroupsListView { get; set; }
 
-        public static TabGroupsSubsystem Instance => _instance ?? (_instance = new TabGroupsSubsystem());
+        public static ProperTabGroupsSubsystem Instance => _instance ??= new ProperTabGroupsSubsystem();
 
-
-
-        private TabGroupsSubsystem()
+        private ProperTabGroupsSubsystem()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             _dte = Package.GetGlobalService(typeof(DTE)) as DTE;
@@ -124,12 +126,11 @@ namespace ProperTabGroups.Subsystem
             // If there is no filters for the document then add it to the unassigned tabs group
             if (tabToIntegrate.Filters.Count.Equals(0))
             {
-                const string unassignedTabsGroupName = "Unassigned Tabs";
-                TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(g => g.Name.Equals(unassignedTabsGroupName));
+                TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(g => g.Name.Equals(UnassignedTabsGroupName));
 
                 if (unassignedGroup == null)
                 {
-                    unassignedGroup = new TabGroup(unassignedTabsGroupName, false);
+                    unassignedGroup = new TabGroup(UnassignedTabsGroupName, false);
                     GroupsDocumentWellSource.Add(unassignedGroup);
                 }
 
@@ -175,18 +176,17 @@ namespace ProperTabGroups.Subsystem
             // Iterate over all open documents
             foreach (TabInfo tab in AllOpenDocuments)
             {
-                // If there is no filters for the document then add it to the unassigned tabs group
+                // If it contains the unassigned filter then ensure the group exists
                 if (tab.Filters.Count == 0)
                 {
-                    const string unassignedTabsGroupName = "Unassigned Tabs";
-                    TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(g => g.Name.Equals(unassignedTabsGroupName));
+                    TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(g => g.Name.Equals(UnassignedTabsGroupName));
 
                     if (unassignedGroup == null)
                     {
-                        unassignedGroup = new TabGroup(unassignedTabsGroupName, true);
+                        unassignedGroup = new TabGroup(UnassignedTabsGroupName, true);
+                        GroupsDocumentWellSource.Add(unassignedGroup);
                     }
-                    GroupsDocumentWellSource.Add(unassignedGroup);
-                    // If no matching group, consider creating a new group or adding to a default group
+
                     continue;
                 }
 
@@ -303,9 +303,30 @@ namespace ProperTabGroups.Subsystem
             // Update UI accordingly
         }
 
-        public static void AddFilter(TabInfo tabInfo, string filter)
+        public static void AddFilterToTab(TabInfo tabInfo, string filter)
         {
-            if (!tabInfo.Filters.Contains(filter)) tabInfo.Filters.Add(filter);
+            if (tabInfo.Filters.Contains(filter)) return;
+
+            tabInfo.Filters.Add(filter);
+
+            if (tabInfo.Filters.Count > 1)
+            {
+                // Remove from unassigned if it's a part of this group
+                tabInfo.Filters.Remove(UnassignedTabsGroupName);
+            }
+        }
+
+        public static void RemoveFilterFromTab(TabInfo tabInfo, string filter)
+        {
+            if (!tabInfo.Filters.Contains(filter)) return;
+
+            tabInfo.Filters.Remove(filter);
+
+            // If this tab contains no filters add it to the unassigned group
+            if (!tabInfo.Filters.Any())
+            {
+                AddFilterToTab(tabInfo, UnassignedTabsGroupName);
+            }
         }
 
         // Additional methods as necessary for drag-and-drop, custom icons, etc.
@@ -327,5 +348,40 @@ namespace ProperTabGroups.Subsystem
         {
             return GroupsDocumentWellSource.Select(tabGroup => tabGroup.TabsInGroupSource.FirstOrDefault(tab => tab.IsSelected)).FirstOrDefault(selectedTab => selectedTab != null);
         }
+
+        public void OpenFileSafely(TabInfo selectedTabInfo)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            if (selectedTabInfo == null || string.IsNullOrWhiteSpace(selectedTabInfo.DocumentPath))
+            {
+                Debug.WriteLine("Selected tab info is null or path is empty.");
+                // Optionally, show a user-friendly message or log this incident.
+                return;
+            }
+
+            string filePath = selectedTabInfo.DocumentPath;
+
+            // Ensure the file path exists to prevent exceptions when trying to open it.
+            if (!File.Exists(filePath))
+            {
+                Debug.WriteLine($"File not found: {filePath}");
+                // Optionally, inform the user that the file could not be found.
+                return;
+            }
+
+            try
+            {
+                // Open the file with a specific view kind if necessary. Here, using the default text view.
+                const string fileKind = Constants.vsViewKindCode; // This is typically for text files.
+                _dte.ItemOperations.OpenFile(filePath, fileKind);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to open file '{filePath}': {ex.Message}");
+                // Log the error or inform the user through a dialog, depending on your application's needs.
+            }
+        }
+
     }
 }

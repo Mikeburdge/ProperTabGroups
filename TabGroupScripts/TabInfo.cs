@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Data;
@@ -52,8 +53,8 @@ namespace ProperTabGroups.TabGroupScripts
 
         private void OnTabsInGroupSourceChanged()
         {
-            TabGroupsSubsystem.Instance.ValidateCurrentGroups();
-            TabGroupsSubsystem.Instance.RefreshAllGroupsAndTabs();
+            ProperTabGroupsSubsystem.Instance.ValidateCurrentGroups();
+            ProperTabGroupsSubsystem.Instance.RefreshAllGroupsAndTabs();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -80,7 +81,34 @@ namespace ProperTabGroups.TabGroupScripts
             }
         }
         public Window Window { get; set; }
-        public List<string> Filters { get; set; }
+
+        private ObservableCollection<string> _filters;
+        public ObservableCollection<string> Filters
+        {
+            get => _filters;
+            set
+            {
+                if (Equals(_filters, value)) return;
+
+                if (_filters != null)
+                {
+                    // Unsubscribe from the CollectionChanged event of the old collection
+                    _filters.CollectionChanged -= Filters_CollectionChanged;
+                }
+
+                _filters = value;
+                OnPropertyChanged();
+
+                if (_filters != null)
+                {
+                    // Subscribe to the CollectionChanged event of the new collection
+                    _filters.CollectionChanged += Filters_CollectionChanged;
+                }
+
+                // Call the method initially to handle the case where the entire collection is replaced
+                OnFiltersInTabChanged();
+            }
+        }
 
         // Property to hold the window's name
         public string WindowName { get; set; }
@@ -89,7 +117,7 @@ namespace ProperTabGroups.TabGroupScripts
         public string ViewKind { get; set; }
 
 
-        public TabInfo(Window window, List<string> filters)
+        public TabInfo(Window window, ObservableCollection<string> filters)
         {
             Window = window;
             Filters = filters;
@@ -112,6 +140,18 @@ namespace ProperTabGroups.TabGroupScripts
             OnPropertyChanged(propertyName);
             return true;
         }
+
+        private void OnFiltersInTabChanged()
+        {
+            ProperTabGroupsSubsystem.Instance.RealignTabsToFilteredGroups();
+        }
+
+        private void Filters_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            // Currently calling the same thing as all we need to do is refresh but this has functionality for later in case we need to do more.
+            OnFiltersInTabChanged();
+        }
+
     }
 
 }

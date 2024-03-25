@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using ProperTabGroups.Subsystem;
 using EnvDTE;
@@ -20,7 +21,7 @@ namespace ProperTabGroups
 
         private bool _bIsSelectionChangeProgrammatic;
 
-        public TabGroupsSubsystem ViewModel => TabGroupsSubsystem.Instance;
+        public ProperTabGroupsSubsystem ViewModel => ProperTabGroupsSubsystem.Instance;
 
         public ProperTabGroupsWindowControl()
         {
@@ -65,14 +66,14 @@ namespace ProperTabGroups
             {
                 for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
                 {
-                    var child = VisualTreeHelper.GetChild(parent, i);
+                    DependencyObject child = VisualTreeHelper.GetChild(parent, i);
 
                     if (child != null && child is ListView)
                     {
                         yield return (ListView)child;
                     }
 
-                    foreach (var childOfChild in GetAllListViews(child))
+                    foreach (ListView childOfChild in GetAllListViews(child))
                     {
                         yield return childOfChild;
                     }
@@ -98,17 +99,19 @@ namespace ProperTabGroups
             TabInfo selectedTabInfo = localListView.SelectedItem as TabInfo;
             if (selectedTabInfo == null) return; // Safety check
 
+            ViewModel.OpenFileSafely(selectedTabInfo);
+
             // Show File
-            _dte.ExecuteCommand("File.OpenFile", selectedTabInfo.DocumentPath);
+            //_dte.ExecuteCommand("File.OpenFile", selectedTabInfo.DocumentPath);
         }
 
         private void HandleClearingAllOtherSelectedItemsListViewOnly(object sender)
         {
-            foreach (var currentListView in GetAllListViews(this))
+            foreach (ListView currentListView in GetAllListViews(this))
             {
                 if (currentListView == sender) continue; // Check to avoid clearing the selection of the current ListView
 
-                foreach (var item in currentListView.Items)
+                foreach (object item in currentListView.Items)
                 {
                     TabInfo currentTabInfo = item as TabInfo;
 
@@ -146,7 +149,7 @@ namespace ProperTabGroups
 
         private void SelectTabGroupInListView(string activatedTabName)
         {
-            List<TabInfo> documentWell = TabGroupsSubsystem.Instance.AllOpenDocuments;
+            List<TabInfo> documentWell = ProperTabGroupsSubsystem.Instance.AllOpenDocuments;
 
             TabInfo matchingTabInfo = documentWell.FirstOrDefault(tabInfo => tabInfo.WindowName.Equals(activatedTabName));
 
@@ -198,36 +201,87 @@ namespace ProperTabGroups
         {
             TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
 
-            IEnumerable<string> itemSource = ViewModel.GetAvailableTabGroupNames(selectedTabInfo);
+            List<string> itemSource = GetAddFilterItemSource(selectedTabInfo);
 
             if (!itemSource.Any()) return;
 
-            FiltersList.ItemsSource = itemSource;
-            ListOfFiltersPopup.IsOpen = true;
+            AddFiltersList.ItemsSource = itemSource;
+            ListOfAddFiltersPopup.IsOpen = true;
+        }
+        private void RemoveFilter_OnClick(object sender, RoutedEventArgs e)
+        {
+            TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
+
+            List<string> itemSource = RetrievePurifiedItemSource(selectedTabInfo);
+
+            if (!itemSource.Any()) return;
+
+            RemoveFiltersList.ItemsSource = itemSource;
+
+            ListOfRemoveFiltersPopup.IsOpen = true;
         }
 
-        private void FiltersList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void AddFiltersList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (FiltersList.SelectedItem is not string filter) return;
+            if (AddFiltersList.SelectedItem is not string filter) return;
 
             TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
-            if (selectedTabInfo != null)
+            if (selectedTabInfo == null) return;
+
+            ProperTabGroupsSubsystem.AddFilterToTab(selectedTabInfo, filter);
+
+            AddFiltersList.SelectedItem = null;
+
+            List<string> itemSource = GetAddFilterItemSource(selectedTabInfo);
+
+            if (itemSource != null && itemSource.Any())
             {
-                TabGroupsSubsystem.AddFilter(selectedTabInfo, filter);
-                FiltersList.SelectedItem = null;
-                ViewModel.RealignTabsToFilteredGroups();
-
-                IEnumerable<string> itemSource = ViewModel.GetAvailableTabGroupNames(selectedTabInfo);
-
-                if (itemSource.Any())
-                {
-                    FiltersList.ItemsSource = itemSource;
-                }
-                else
-                {
-                    ListOfFiltersPopup.IsOpen = false;
-                }
+                AddFiltersList.ItemsSource = itemSource;
             }
+            else
+            {
+                ListOfAddFiltersPopup.IsOpen = false;
+            }
+        }
+
+        private void RemoveFiltersList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (RemoveFiltersList.SelectedItem is not string filter) return;
+
+            TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
+            if (selectedTabInfo == null) return;
+
+            ProperTabGroupsSubsystem.RemoveFilterFromTab(selectedTabInfo, filter);
+
+            RemoveFiltersList.SelectedItem = null;
+
+            List<string> itemSource = RetrievePurifiedItemSource(selectedTabInfo);
+
+            if (itemSource.Any())
+            {
+                RemoveFiltersList.ItemsSource = itemSource;
+            }
+            else
+            {
+                ListOfRemoveFiltersPopup.IsOpen = false;
+            }
+        }
+
+        private List<string> GetAddFilterItemSource(TabInfo selectedTabInfo)
+        {
+            List<string> itemSource = ViewModel.GetAvailableTabGroupNames(selectedTabInfo).ToList();
+            // Remove from unassigned if it's a part of this group
+            itemSource.Remove(ProperTabGroupsSubsystem.UnassignedTabsGroupName);
+            return itemSource;
+        }
+
+        private static List<string> RetrievePurifiedItemSource(TabInfo selectedTabInfo)
+        {
+            // Remove from unassigned if it's a part of this group
+            List<string> itemSource = selectedTabInfo.Filters.ToList();
+
+            itemSource.Remove(ProperTabGroupsSubsystem.UnassignedTabsGroupName);
+            return itemSource;
         }
     }
 }
