@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -19,13 +20,21 @@ namespace ProperTabGroups.TabGroupScripts
             get => _tabsInGroupSource;
             set
             {
-                if (!Equals(_tabsInGroupSource, value))
+                if (Equals(_tabsInGroupSource, value)) return;
+
+                if (_tabsInGroupSource != null)
                 {
+                    // Unsubscribe from the CollectionChanged event of the old collection
+                    _tabsInGroupSource.CollectionChanged -= TabsInGroupSource_CollectionChanged;
+                }
 
-                    _tabsInGroupSource = value;
-                    OnPropertyChanged(nameof(TabsInGroupSource));
+                _tabsInGroupSource = value;
+                OnPropertyChanged();
 
-                    OnTabsInGroupSourceChanged();
+                if (_tabsInGroupSource != null)
+                {
+                    // Subscribe to the CollectionChanged event of the new collection
+                    _tabsInGroupSource.CollectionChanged += TabsInGroupSource_CollectionChanged;
                 }
             }
         }
@@ -50,18 +59,15 @@ namespace ProperTabGroups.TabGroupScripts
             };
         }
 
-
-        private void OnTabsInGroupSourceChanged()
-        {
-            ProperTabGroupsSubsystem.Instance.ValidateCurrentGroups();
-            ProperTabGroupsSubsystem.Instance.RefreshAllGroupsAndTabs();
-        }
-
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+        private void TabsInGroupSource_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            ProperTabGroupsSubsystem.RefreshAllTabsView();
         }
     }
 
@@ -105,8 +111,6 @@ namespace ProperTabGroups.TabGroupScripts
                     _filters.CollectionChanged += Filters_CollectionChanged;
                 }
 
-                // Call the method initially to handle the case where the entire collection is replaced
-                OnFiltersInTabChanged();
             }
         }
 
@@ -119,6 +123,7 @@ namespace ProperTabGroups.TabGroupScripts
 
         public TabInfo(Window window, ObservableCollection<string> filters)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             Window = window;
             Filters = filters;
             WindowName = window.Caption;
@@ -141,15 +146,10 @@ namespace ProperTabGroups.TabGroupScripts
             return true;
         }
 
-        private void OnFiltersInTabChanged()
-        {
-            ProperTabGroupsSubsystem.Instance.RealignTabsToFilteredGroups();
-        }
-
         private void Filters_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             // Currently calling the same thing as all we need to do is refresh but this has functionality for later in case we need to do more.
-            OnFiltersInTabChanged();
+            ProperTabGroupsSubsystem.Instance.RealignTabsToFilteredGroups();
         }
 
     }

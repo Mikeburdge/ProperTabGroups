@@ -21,6 +21,8 @@ namespace ProperTabGroups
 
         private bool _bIsSelectionChangeProgrammatic;
 
+        private TabInfo _filterModificationCurrentTabInfo = null;
+
         public ProperTabGroupsSubsystem ViewModel => ProperTabGroupsSubsystem.Instance;
 
         public ProperTabGroupsWindowControl()
@@ -196,11 +198,36 @@ namespace ProperTabGroups
             cm.PlacementTarget = sender as Button;
             cm.IsOpen = true;
         }
+        private object FindDataContextForFrameworkElement(FrameworkElement element)
+        {
+            if (element.DataContext != null)
+            {
+                return element.DataContext;
+            }
+
+            FrameworkElement parent = VisualTreeHelper.GetParent(element) as FrameworkElement;
+            while (parent != null)
+            {
+                if (parent.DataContext != null)
+                {
+                    return parent.DataContext;
+                }
+                parent = VisualTreeHelper.GetParent(parent) as FrameworkElement;
+            }
+
+            return null;
+        }
 
         private void AddFilter_OnClick(object sender, RoutedEventArgs e)
         {
-            TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
+            TabInfo selectedTabInfo = GetClickedTabInfo(sender);
 
+            if (selectedTabInfo == null) return;
+
+            // Storing this to use in the next window (@see AddFiltersList_OnSelectionChanged)
+            _filterModificationCurrentTabInfo = selectedTabInfo;
+
+            // Proceed to remove the filter from tabInfo
             List<string> itemSource = GetAddFilterItemSource(selectedTabInfo);
 
             if (!itemSource.Any()) return;
@@ -208,10 +235,17 @@ namespace ProperTabGroups
             AddFiltersList.ItemsSource = itemSource;
             ListOfAddFiltersPopup.IsOpen = true;
         }
+
         private void RemoveFilter_OnClick(object sender, RoutedEventArgs e)
         {
-            TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
+            TabInfo selectedTabInfo = GetClickedTabInfo(sender);
 
+            if (selectedTabInfo == null) return;
+
+            // Storing this to use in the next window (@see RemoveFiltersList_OnSelectionChanged)
+            _filterModificationCurrentTabInfo = selectedTabInfo;
+
+            // Proceed to remove the filter from tabInfo
             List<string> itemSource = RetrievePurifiedItemSource(selectedTabInfo);
 
             if (!itemSource.Any()) return;
@@ -220,12 +254,22 @@ namespace ProperTabGroups
 
             ListOfRemoveFiltersPopup.IsOpen = true;
         }
+        private TabInfo GetClickedTabInfo(object sender)
+        {
+            MenuItem menuItem = sender as MenuItem;
+            ContextMenu contextMenu = menuItem.Parent as ContextMenu;
+            FrameworkElement placementTarget = contextMenu.PlacementTarget as FrameworkElement;
+            object dataContext = FindDataContextForFrameworkElement(placementTarget);
+
+            TabInfo selectedTabInfo = dataContext as TabInfo;
+            return selectedTabInfo;
+        }
 
         private void AddFiltersList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (AddFiltersList.SelectedItem is not string filter) return;
 
-            TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
+            TabInfo selectedTabInfo = _filterModificationCurrentTabInfo;
             if (selectedTabInfo == null) return;
 
             ProperTabGroupsSubsystem.AddFilterToTab(selectedTabInfo, filter);
@@ -240,6 +284,8 @@ namespace ProperTabGroups
             }
             else
             {
+                // Get rid of it when we are done
+                _filterModificationCurrentTabInfo = null;
                 ListOfAddFiltersPopup.IsOpen = false;
             }
         }
@@ -248,7 +294,7 @@ namespace ProperTabGroups
         {
             if (RemoveFiltersList.SelectedItem is not string filter) return;
 
-            TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
+            TabInfo selectedTabInfo = _filterModificationCurrentTabInfo;
             if (selectedTabInfo == null) return;
 
             ProperTabGroupsSubsystem.RemoveFilterFromTab(selectedTabInfo, filter);
@@ -263,6 +309,8 @@ namespace ProperTabGroups
             }
             else
             {
+                // Get rid of it when we are done
+                _filterModificationCurrentTabInfo = null;
                 ListOfRemoveFiltersPopup.IsOpen = false;
             }
         }
@@ -275,7 +323,7 @@ namespace ProperTabGroups
             return itemSource;
         }
 
-        private static List<string> RetrievePurifiedItemSource(TabInfo selectedTabInfo)
+        private List<string> RetrievePurifiedItemSource(TabInfo selectedTabInfo)
         {
             // Remove from unassigned if it's a part of this group
             List<string> itemSource = selectedTabInfo.Filters.ToList();

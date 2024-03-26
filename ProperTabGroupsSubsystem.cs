@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -30,19 +31,28 @@ namespace ProperTabGroups.Subsystem
             get => _groupsDocumentWellSource;
             set
             {
-                if (!Equals(_groupsDocumentWellSource, value))
-                {
-                    _groupsDocumentWellSource = value;
-                    OnPropertyChanged();
+                if (Equals(_groupsDocumentWellSource, value)) return;
 
-                    OnGroupsDocumentWellSourceChanged();
+                if (_groupsDocumentWellSource != null)
+                {
+                    // Unsubscribe from the CollectionChanged event of the old collection
+                    _groupsDocumentWellSource.CollectionChanged -= OnGroupsDocumentWellSourceChanged;
+                }
+
+                _groupsDocumentWellSource = value;
+                OnPropertyChanged();
+                
+                if (_groupsDocumentWellSource != null)
+                {
+                    // Subscribe to the CollectionChanged event of the new collection
+                    _groupsDocumentWellSource.CollectionChanged += OnGroupsDocumentWellSourceChanged;
                 }
             }
         }
 
-        private void OnGroupsDocumentWellSourceChanged()
+        private void OnGroupsDocumentWellSourceChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
         {
-            RefreshAllGroupsAndTabs();
+            RefreshAllGroupsView();
         }
 
         public CollectionViewSource GroupsDocumentWell { get; set; }
@@ -157,11 +167,21 @@ namespace ProperTabGroups.Subsystem
             }
         }
 
-        public void RefreshAllGroupsAndTabs()
+        public void RefreshAllGroupsAndTabsView()
         {
-            CollectionViewSource.GetDefaultView(GroupsDocumentWellSource).Refresh();
+            RefreshAllGroupsView();
 
-            foreach (TabGroup tabGroup in GroupsDocumentWellSource)
+            RefreshAllTabsView();
+        }
+
+        public static void RefreshAllGroupsView()
+        {
+            CollectionViewSource.GetDefaultView(Instance.GroupsDocumentWellSource).Refresh();
+        }
+
+        public static void RefreshAllTabsView()
+        {
+            foreach (TabGroup tabGroup in Instance.GroupsDocumentWellSource)
             {
                 CollectionViewSource.GetDefaultView(tabGroup.TabsInGroupSource).Refresh();
             }
@@ -221,13 +241,6 @@ namespace ProperTabGroups.Subsystem
         /// <returns>Void. The method does not return a value but modifies the GroupsDocumentWellSource by potentially removing tabs from groups.</returns>
         public void ValidateCurrentGroups()
         {
-            // Use LINQ to filter out groups with empty names directly
-            List<TabGroup> groupsToRemove = GroupsDocumentWellSource.Where(group => string.IsNullOrEmpty(group.Name)).ToList();
-            foreach (TabGroup group in groupsToRemove)
-            {
-                GroupsDocumentWellSource.Remove(group);
-            }
-
             foreach (TabGroup tabGroup in GroupsDocumentWellSource)
             {
                 for (int i = tabGroup.TabsInGroupSource.Count - 1; i >= 0; i--)
@@ -265,6 +278,14 @@ namespace ProperTabGroups.Subsystem
 
             // Add to ObservableCollection
             GroupsDocumentWellSource.Add(newTabGroup);
+
+            //// Use LINQ to filter out groups with empty names directly
+            //List<TabGroup> groupsToRemove = ProperTabGroupsSubsystem.Instance.GroupsDocumentWellSource.Where(group => string.IsNullOrEmpty(group.Name)).ToList();
+            //foreach (TabGroup group in groupsToRemove)
+            //{
+            //    ProperTabGroupsSubsystem.Instance.GroupsDocumentWellSource.Remove(group);
+            //}
+
 
             return newTabGroup;
         }
