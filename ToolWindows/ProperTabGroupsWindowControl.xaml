@@ -91,9 +91,9 @@
             <MenuItem Header="Rename" ></MenuItem>
 
         </ContextMenu>
-        <ContextMenu x:Key="TabInfoContextMenu" ContextMenuOpening="TabInfoContextMenu_OnContextMenuOpening">
-            <MenuItem Name="AddMenuItem" Header="Add filter"  GotFocus="UIElement_OnGotFocus"/>
-            <MenuItem Name="RemoveMenuItem" Header="Remove filter" GotFocus="UIElement_OnGotFocus"/>
+        <ContextMenu x:Key="TabInfoContextMenu">
+            <MenuItem Header="Add filter" Click="AddFilter_OnClick"></MenuItem>
+            <MenuItem Header="Remove filter" Click="RemoveFilter_OnClick"></MenuItem>
         </ContextMenu>
 
 
@@ -117,7 +117,7 @@
         <Popup Name="ListOfAddFiltersPopup" Placement="MousePoint" Width="auto" Height="auto" IsOpen="False" StaysOpen="False"  >
             <Border BorderBrush="Black" BorderThickness="1" Background="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}">
                 <StackPanel Margin="10">
-                    <ListView x:Name="AddFiltersList" >
+                    <ListView x:Name="AddFiltersList" SelectionChanged="AddFiltersList_OnSelectionChanged">
                         <ListView.GroupStyle>
                             <GroupStyle>
                                 <GroupStyle.HeaderTemplate>
@@ -135,7 +135,7 @@
         <Popup Name="ListOfRemoveFiltersPopup" Placement="MousePoint" Width="auto" Height="auto" IsOpen="False" StaysOpen="False"  >
             <Border BorderBrush="Black" BorderThickness="1" Background="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}">
                 <StackPanel Margin="10">
-                    <ListView x:Name="RemoveFiltersList">
+                    <ListView x:Name="RemoveFiltersList" SelectionChanged="RemoveFiltersList_OnSelectionChanged">
                         <ListView.GroupStyle>
                             <GroupStyle>
                                 <GroupStyle.HeaderTemplate>
