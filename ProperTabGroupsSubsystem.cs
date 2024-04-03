@@ -41,7 +41,7 @@ namespace ProperTabGroups.Subsystem
 
                 _groupsDocumentWellSource = value;
                 OnPropertyChanged();
-                
+
                 if (_groupsDocumentWellSource != null)
                 {
                     // Subscribe to the CollectionChanged event of the new collection
@@ -207,6 +207,7 @@ namespace ProperTabGroups.Subsystem
                         GroupsDocumentWellSource.Add(unassignedGroup);
                     }
 
+                    unassignedGroup.TabsInGroupSource.Add(tab);
                     continue;
                 }
 
@@ -251,6 +252,13 @@ namespace ProperTabGroups.Subsystem
                         tabGroup.TabsInGroupSource.RemoveAt(i);
                     }
                 }
+            }
+
+            TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(x => x.Name == UnassignedTabsGroupName);
+
+            if (unassignedGroup != null && !unassignedGroup.TabsInGroupSource.Any())
+            {
+                DeleteTabGroup(unassignedGroup);
             }
         }
 
@@ -302,6 +310,25 @@ namespace ProperTabGroups.Subsystem
         public IEnumerable<string> GetAvailableTabGroupNames(TabInfo tabInfo)
         {
             return (from @group in GroupsDocumentWellSource where !tabInfo.Filters.Contains(@group.Name) select @group.Name).ToList();
+        }
+
+        public IEnumerable<TabGroup> GetTabGroupsFromNames(List<string> inStrings)
+        {
+            List<TabGroup> list = new();
+            foreach (TabGroup group in GroupsDocumentWellSource)
+            {
+                if (inStrings.Contains(group.Name))
+                {
+                    list.Add(group);
+                }
+            }
+
+            return list;
+        }
+
+        public IEnumerable<TabGroup> GetAllTabGroups()
+        {
+            return GroupsDocumentWellSource;
         }
 
         public void SetGroupVisibility(TabGroup tabGroup, bool isVisible)

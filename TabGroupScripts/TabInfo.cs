@@ -42,6 +42,7 @@ namespace ProperTabGroups.TabGroupScripts
         public CollectionViewSource TabsInGroup { get; set; }
         // Used for filter matching
         public string Name { get; set; }
+        public string FilterGuid { get; set; } // TODO:: Implement this rather than using the group names
         public bool BIsLocked { get; set; }
         public bool BIsVisible { get; set; }
         public string ColourCode { get; set; }

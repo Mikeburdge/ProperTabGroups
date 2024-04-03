@@ -8,6 +8,7 @@ using System.Runtime.Remoting.Channels;
 using System.Windows.Media;
 using System.Windows;
 using System.Windows.Input;
+using ProperTabGroups.DualListSelector;
 using ProperTabGroups.TabGroupScripts;
 using SelectionChangedEventArgs = System.Windows.Controls.SelectionChangedEventArgs;
 using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
@@ -218,42 +219,16 @@ namespace ProperTabGroups
             return null;
         }
 
-        private void AddFilter_OnClick(object sender, RoutedEventArgs e)
+        private void ModifyFilters_OnClick(object sender, RoutedEventArgs e)
         {
             TabInfo selectedTabInfo = GetClickedTabInfo(sender);
-
             if (selectedTabInfo == null) return;
 
-            // Storing this to use in the next window (@see AddFiltersList_OnSelectionChanged)
-            _filterModificationCurrentTabInfo = selectedTabInfo;
-
-            // Proceed to remove the filter from tabInfo
-            List<string> itemSource = GetAddFilterItemSource(selectedTabInfo);
-
-            if (!itemSource.Any()) return;
-
-            AddFiltersList.ItemsSource = itemSource;
-            ListOfAddFiltersPopup.IsOpen = true;
+            DualListboxSelectorWindowControl selectorWindow = new();
+            selectorWindow.Show();
+            selectorWindow.PopulateInitialItems(selectedTabInfo);
         }
 
-        private void RemoveFilter_OnClick(object sender, RoutedEventArgs e)
-        {
-            TabInfo selectedTabInfo = GetClickedTabInfo(sender);
-
-            if (selectedTabInfo == null) return;
-
-            // Storing this to use in the next window (@see RemoveFiltersList_OnSelectionChanged)
-            _filterModificationCurrentTabInfo = selectedTabInfo;
-
-            // Proceed to remove the filter from tabInfo
-            List<string> itemSource = RetrievePurifiedItemSource(selectedTabInfo);
-
-            if (!itemSource.Any()) return;
-
-            RemoveFiltersList.ItemsSource = itemSource;
-
-            ListOfRemoveFiltersPopup.IsOpen = true;
-        }
         private TabInfo GetClickedTabInfo(object sender)
         {
             MenuItem menuItem = sender as MenuItem;
@@ -263,73 +238,6 @@ namespace ProperTabGroups
 
             TabInfo selectedTabInfo = dataContext as TabInfo;
             return selectedTabInfo;
-        }
-
-        private void AddFiltersList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (AddFiltersList.SelectedItem is not string filter) return;
-
-            TabInfo selectedTabInfo = _filterModificationCurrentTabInfo;
-            if (selectedTabInfo == null) return;
-
-            ProperTabGroupsSubsystem.AddFilterToTab(selectedTabInfo, filter);
-
-            AddFiltersList.SelectedItem = null;
-
-            List<string> itemSource = GetAddFilterItemSource(selectedTabInfo);
-
-            if (itemSource != null && itemSource.Any())
-            {
-                AddFiltersList.ItemsSource = itemSource;
-            }
-            else
-            {
-                // Get rid of it when we are done
-                _filterModificationCurrentTabInfo = null;
-                ListOfAddFiltersPopup.IsOpen = false;
-            }
-        }
-
-        private void RemoveFiltersList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (RemoveFiltersList.SelectedItem is not string filter) return;
-
-            TabInfo selectedTabInfo = _filterModificationCurrentTabInfo;
-            if (selectedTabInfo == null) return;
-
-            ProperTabGroupsSubsystem.RemoveFilterFromTab(selectedTabInfo, filter);
-
-            RemoveFiltersList.SelectedItem = null;
-
-            List<string> itemSource = RetrievePurifiedItemSource(selectedTabInfo);
-
-            if (itemSource.Any())
-            {
-                RemoveFiltersList.ItemsSource = itemSource;
-            }
-            else
-            {
-                // Get rid of it when we are done
-                _filterModificationCurrentTabInfo = null;
-                ListOfRemoveFiltersPopup.IsOpen = false;
-            }
-        }
-
-        private List<string> GetAddFilterItemSource(TabInfo selectedTabInfo)
-        {
-            List<string> itemSource = ViewModel.GetAvailableTabGroupNames(selectedTabInfo).ToList();
-            // Remove from unassigned if it's a part of this group
-            itemSource.Remove(ProperTabGroupsSubsystem.UnassignedTabsGroupName);
-            return itemSource;
-        }
-
-        private List<string> RetrievePurifiedItemSource(TabInfo selectedTabInfo)
-        {
-            // Remove from unassigned if it's a part of this group
-            List<string> itemSource = selectedTabInfo.Filters.ToList();
-
-            itemSource.Remove(ProperTabGroupsSubsystem.UnassignedTabsGroupName);
-            return itemSource;
         }
     }
 }
