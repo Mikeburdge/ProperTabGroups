@@ -16,55 +16,57 @@
         BorderBrush="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"
         >
 
-    <Window.Resources>
-        <!--VS Theme ListView-->
-        <Style TargetType="ListBox">
-            <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
-            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
-        </Style>
+	<Window.Resources>
+		<!--VS Theme ListView-->
+		<Style TargetType="ListBox">
+			<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
+			<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
+		</Style>
 
-        <!--Scrollbar VS Theme-->
-        <Style TargetType="ScrollBar">
-            <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ScrollBarThumbBackgroundKey}}"/>
-        </Style>
+		<!--Scrollbar VS Theme-->
+		<Style TargetType="ScrollBar">
+			<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ScrollBarThumbBackgroundKey}}"/>
+		</Style>
 
-        <!--Button VS Theme-->
-        <Style TargetType="Button">
-            <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
-            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
-        </Style>
+		<!--Button VS Theme-->
+		<Style TargetType="Button">
+			<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
+			<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
+		</Style>
 
-        <!--TextBlock VS Theme-->
-        <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}" />
-        </Style>
-    </Window.Resources>
+		<!--TextBlock VS Theme-->
+		<Style TargetType="TextBlock">
+			<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}" />
+		</Style>
+	</Window.Resources>
 
-    <StackPanel>
-        <TextBlock Margin="5" FontSize="16" FontWeight="Bold" Name="TitleTextBlock" TextAlignment="Center"/>
-        <Grid  Margin="10,0">
+	<StackPanel>
+		<TextBlock Margin="5" FontSize="16" FontWeight="Bold" Name="TitleTextBlock" TextAlignment="Center"/>
+		<Grid  Margin="10,0">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="auto"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="*"/>
+			</Grid.RowDefinitions>
+
             <TextBlock Text="Available" FontWeight="SemiBold" TextAlignment="Center" LineHeight="20"></TextBlock>
             <TextBlock Grid.Column="2" Text="Active" FontWeight="SemiBold" TextAlignment="Center" LineHeight="20"></TextBlock>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <ListBox x:Name="LeftListBox" Grid.Column="0" Grid.Row="1" DisplayMemberPath="Name" MinHeight="100"/>
-            <StackPanel Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <Button Content="&gt;" Click="MoveRight" Margin="5" Width="20"/>
-                <Button Content="&lt;" Click="MoveLeft" Margin="5" Width="20"/>
-            </StackPanel>
-            <ListBox x:Name="RightListBox" Grid.Column="2" Grid.Row="1" DisplayMemberPath="Name" MinHeight="100"/>
-        </Grid>
-        <UniformGrid Rows="1">
-            <Button Content="Ok" Click="OkButtonClick" Width="75" Height="30" IsDefault="True" Margin="10" />
-            <Button Content="Close"  Click="CloseButtonClick" Width="75" Height="30" IsCancel="True" Margin="10"/>
-            <Button Content="Apply" Click="ApplyButtonClick" Width="75" Height="30" Margin="10"/>
-        </UniformGrid>
-    </StackPanel>
+
+			<ListBox Grid.Column="0" Grid.Row="1" x:Name="LeftListBox" DisplayMemberPath="Name" MinHeight="100"/>
+			<StackPanel Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+				<Button Content="&gt;" Click="MoveRight" Margin="5" Width="20"/>
+				<Button Content="&lt;" Click="MoveLeft" Margin="5" Width="20"/>
+			</StackPanel>
+			<ListBox Grid.Column="2" Grid.Row="1" x:Name="RightListBox" DisplayMemberPath="Name" MinHeight="100"/>
+		</Grid>
+		<UniformGrid Rows="1">
+			<Button Content="Ok" Click="OkButtonClick" Width="75" Height="30" IsDefault="True" Margin="10" />
+			<Button Content="Close"  Click="CloseButtonClick" Width="75" Height="30" IsCancel="True" Margin="10"/>
+			<Button Content="Apply" Click="ApplyButtonClick" Width="75" Height="30" Margin="10"/>
+		</UniformGrid>
+	</StackPanel>
 </Window>
