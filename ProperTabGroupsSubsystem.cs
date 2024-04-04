@@ -14,6 +14,8 @@ using ProperTabGroups.TabGroupScripts;
 using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
 using Window = EnvDTE.Window;
 using System.Diagnostics;
+using Microsoft.VisualStudio.Shell.Interop;
+using Constants = EnvDTE.Constants;
 
 namespace ProperTabGroups.Subsystem
 {
@@ -24,7 +26,8 @@ namespace ProperTabGroups.Subsystem
 
         private ObservableCollection<TabGroup> _groupsDocumentWellSource;
 
-        public const string UnassignedTabsGroupName = "Unassigned Tabs";
+        public string UnassignedTabsGroupName = "Unassigned Tabs";
+        public Guid UnassignedTabsGroupGuid = Guid.NewGuid();
 
         public ObservableCollection<TabGroup> GroupsDocumentWellSource
         {
@@ -96,6 +99,12 @@ namespace ProperTabGroups.Subsystem
 
             HandleGroupFunctionality();
             _dte.Events.SolutionEvents.Opened += SolutionOpened;
+
+            // Example of subscribing to the shutdown event
+            IVsShell shellService = (IVsShell)GetService(typeof(SVsShell));
+            uint cookie;
+            shellService.AdviseShellPropertyChanges(this, out cookie);
+
         }
 
         private void SolutionOpened()
@@ -103,12 +112,12 @@ namespace ProperTabGroups.Subsystem
             ThreadHelper.ThrowIfNotOnUIThread();
 
             const string document1Name = "Test Documents";
-            CreateNewTabGroup(document1Name);
+            TabGroup document1Group = CreateNewTabGroup(document1Name);
             CreateNewTabGroup("Test Documents 2");
             // Loop through all open document windows
             foreach (Window window in _dte.Windows.Cast<Window>().Where(window => window.Kind.Equals("Document")))
             {
-                AllOpenDocuments.Add(new TabInfo(window, [document1Name]));
+                AllOpenDocuments.Add(new TabInfo(window, [document1Group.GroupGuid]));
             }
 
             RealignTabsToFilteredGroups();
@@ -136,11 +145,11 @@ namespace ProperTabGroups.Subsystem
             // If there is no filters for the document then add it to the unassigned tabs group
             if (tabToIntegrate.Filters.Count.Equals(0))
             {
-                TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(g => g.Name.Equals(UnassignedTabsGroupName));
+                TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(g => g.GroupGuid.Equals(UnassignedTabsGroupGuid));
 
                 if (unassignedGroup == null)
                 {
-                    unassignedGroup = new TabGroup(UnassignedTabsGroupName, false);
+                    unassignedGroup = new TabGroup(UnassignedTabsGroupName, false, true, UnassignedTabsGroupGuid);
                     GroupsDocumentWellSource.Add(unassignedGroup);
                 }
 
@@ -151,10 +160,10 @@ namespace ProperTabGroups.Subsystem
             }
 
             // Determine the correct group for each tab based on its filters
-            foreach (string filter in tabToIntegrate.Filters)
+            foreach (Guid filter in tabToIntegrate.Filters)
             {
                 // Collect all groups this tag should be in
-                IEnumerable<TabGroup> matchingGroups = GroupsDocumentWellSource.Where(g => g.Name == filter);
+                IEnumerable<TabGroup> matchingGroups = GroupsDocumentWellSource.Where(g => g.GroupGuid == filter);
 
                 foreach (TabGroup group in matchingGroups)
                 {
@@ -199,11 +208,11 @@ namespace ProperTabGroups.Subsystem
                 // If it contains the unassigned filter then ensure the group exists
                 if (tab.Filters.Count == 0)
                 {
-                    TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(g => g.Name.Equals(UnassignedTabsGroupName));
+                    TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(g => g.GroupGuid.Equals(UnassignedTabsGroupGuid));
 
                     if (unassignedGroup == null)
                     {
-                        unassignedGroup = new TabGroup(UnassignedTabsGroupName, true);
+                        unassignedGroup = new TabGroup(UnassignedTabsGroupName, false, true, UnassignedTabsGroupGuid);
                         GroupsDocumentWellSource.Add(unassignedGroup);
                     }
 
@@ -212,10 +221,10 @@ namespace ProperTabGroups.Subsystem
                 }
 
                 // Determine the correct group for each tab based on its filters
-                foreach (string filter in tab.Filters)
+                foreach (Guid filter in tab.Filters)
                 {
                     // Collect all groups this tag should be in
-                    IEnumerable<TabGroup> matchingGroups = GroupsDocumentWellSource.Where(g => g.Name == filter);
+                    IEnumerable<TabGroup> matchingGroups = GroupsDocumentWellSource.Where(g => g.GroupGuid == filter);
 
                     foreach (TabGroup group in matchingGroups)
                     {
@@ -247,14 +256,14 @@ namespace ProperTabGroups.Subsystem
                 for (int i = tabGroup.TabsInGroupSource.Count - 1; i >= 0; i--)
                 {
                     TabInfo tabInfo = tabGroup.TabsInGroupSource[i];
-                    if (!tabInfo.Filters.Contains(tabGroup.Name))
+                    if (!tabInfo.Filters.Contains(tabGroup.GroupGuid))
                     {
                         tabGroup.TabsInGroupSource.RemoveAt(i);
                     }
                 }
             }
 
-            TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(x => x.Name == UnassignedTabsGroupName);
+            TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(x => x.GroupGuid == UnassignedTabsGroupGuid);
 
             if (unassignedGroup != null && !unassignedGroup.TabsInGroupSource.Any())
             {
@@ -287,13 +296,12 @@ namespace ProperTabGroups.Subsystem
             // Add to ObservableCollection
             GroupsDocumentWellSource.Add(newTabGroup);
 
-            //// Use LINQ to filter out groups with empty names directly
-            //List<TabGroup> groupsToRemove = ProperTabGroupsSubsystem.Instance.GroupsDocumentWellSource.Where(group => string.IsNullOrEmpty(group.Name)).ToList();
-            //foreach (TabGroup group in groupsToRemove)
-            //{
-            //    ProperTabGroupsSubsystem.Instance.GroupsDocumentWellSource.Remove(group);
-            //}
-
+            // Use LINQ to filter out groups with empty names directly
+            List<TabGroup> groupsToRemove = GroupsDocumentWellSource.Where(group => string.IsNullOrEmpty(group.Name)).ToList();
+            foreach (TabGroup group in groupsToRemove)
+            {
+                GroupsDocumentWellSource.Remove(group);
+            }
 
             return newTabGroup;
         }
@@ -309,7 +317,7 @@ namespace ProperTabGroups.Subsystem
 
         public IEnumerable<string> GetAvailableTabGroupNames(TabInfo tabInfo)
         {
-            return (from @group in GroupsDocumentWellSource where !tabInfo.Filters.Contains(@group.Name) select @group.Name).ToList();
+            return (from @group in GroupsDocumentWellSource where !tabInfo.Filters.Contains(@group.GroupGuid) select @group.Name).ToList();
         }
 
         public IEnumerable<TabGroup> GetTabGroupsFromNames(List<string> inStrings)
@@ -324,6 +332,11 @@ namespace ProperTabGroups.Subsystem
             }
 
             return list;
+        }
+
+        public string GetGroupNameFromGuid(Guid inGuid)
+        {
+            return (from @group in GroupsDocumentWellSource where inGuid.Equals(@group.GroupGuid) select @group.Name).FirstOrDefault();
         }
 
         public IEnumerable<TabGroup> GetAllTabGroups()
@@ -351,7 +364,7 @@ namespace ProperTabGroups.Subsystem
             // Update UI accordingly
         }
 
-        public static void AddFilterToTab(TabInfo tabInfo, string filter)
+        public void AddFilterToTab(TabInfo tabInfo, Guid filter)
         {
             if (tabInfo.Filters.Contains(filter)) return;
 
@@ -360,11 +373,11 @@ namespace ProperTabGroups.Subsystem
             if (tabInfo.Filters.Count > 1)
             {
                 // Remove from unassigned if it's a part of this group
-                tabInfo.Filters.Remove(UnassignedTabsGroupName);
+                tabInfo.Filters.Remove(UnassignedTabsGroupGuid);
             }
         }
 
-        public static void RemoveFilterFromTab(TabInfo tabInfo, string filter)
+        public void RemoveFilterFromTab(TabInfo tabInfo, Guid filter)
         {
             if (!tabInfo.Filters.Contains(filter)) return;
 
@@ -373,7 +386,7 @@ namespace ProperTabGroups.Subsystem
             // If this tab contains no filters add it to the unassigned group
             if (!tabInfo.Filters.Any())
             {
-                AddFilterToTab(tabInfo, UnassignedTabsGroupName);
+                AddFilterToTab(tabInfo, UnassignedTabsGroupGuid);
             }
         }
 

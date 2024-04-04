@@ -29,6 +29,7 @@ namespace ProperTabGroups.TabGroupScripts
                 }
 
                 _tabsInGroupSource = value;
+
                 OnPropertyChanged();
 
                 if (_tabsInGroupSource != null)
@@ -42,14 +43,16 @@ namespace ProperTabGroups.TabGroupScripts
         public CollectionViewSource TabsInGroup { get; set; }
         // Used for filter matching
         public string Name { get; set; }
-        public string FilterGuid { get; set; } // TODO:: Implement this rather than using the group names
+        public Guid GroupGuid { get; set; }
         public bool BIsLocked { get; set; }
         public bool BIsVisible { get; set; }
         public string ColourCode { get; set; }
+        public int ItemCount => TabsInGroupSource.Count;
 
-        public TabGroup(string name, bool bIsLocked = false, bool bIsVisible = true)
+        public TabGroup(string name, bool bIsLocked = false, bool bIsVisible = true, Guid inGuid = default)
         {
             Name = name;
+            GroupGuid = inGuid == default ? Guid.NewGuid() : inGuid;
             BIsLocked = bIsLocked;
             BIsVisible = bIsVisible;
 
@@ -89,8 +92,8 @@ namespace ProperTabGroups.TabGroupScripts
         }
         public Window Window { get; set; }
 
-        private ObservableCollection<string> _filters;
-        public ObservableCollection<string> Filters
+        private ObservableCollection<Guid> _filters;
+        public ObservableCollection<Guid> Filters
         {
             get => _filters;
             set
@@ -122,7 +125,7 @@ namespace ProperTabGroups.TabGroupScripts
         public string ViewKind { get; set; }
 
 
-        public TabInfo(Window window, ObservableCollection<string> filters)
+        public TabInfo(Window window, ObservableCollection<Guid> filters)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             Window = window;

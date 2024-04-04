@@ -46,12 +46,12 @@ namespace ProperTabGroups.DualListSelector
             
             foreach (TabGroup tabGroup in tabGroups.OrderBy(group => group.Name))
             {
-                if (tabGroup.Name == ProperTabGroupsSubsystem.UnassignedTabsGroupName)
+                if (tabGroup.GroupGuid == ViewModel.UnassignedTabsGroupGuid)
                 {
                     continue;
                 }
                 
-                if (inTabInfo.Filters.Contains(tabGroup.Name))
+                if (inTabInfo.Filters.Contains(tabGroup.GroupGuid))
                 {
                     RightItems.Add(tabGroup);
                 }
@@ -115,12 +115,12 @@ namespace ProperTabGroups.DualListSelector
 
             foreach (TabGroup leftItem in LeftItems)
             {
-                ProperTabGroupsSubsystem.RemoveFilterFromTab(currentTabInfo, leftItem.Name);
+                ViewModel.RemoveFilterFromTab(currentTabInfo, leftItem.GroupGuid);
             }
 
             foreach (TabGroup rightItem in RightItems)
             {
-                ProperTabGroupsSubsystem.AddFilterToTab(currentTabInfo, rightItem.Name);
+                ViewModel.AddFilterToTab(currentTabInfo, rightItem.GroupGuid);
             }
         }
     }
