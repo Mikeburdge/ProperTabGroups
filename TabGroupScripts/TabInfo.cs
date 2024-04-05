@@ -71,7 +71,7 @@ namespace ProperTabGroups.TabGroupScripts
         }
         private void TabsInGroupSource_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            ProperTabGroupsSubsystem.RefreshAllTabsView();
+            DocumentWellManagementSubsystem.RefreshAllTabsView();
         }
     }
 
@@ -153,7 +153,7 @@ namespace ProperTabGroups.TabGroupScripts
         private void Filters_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             // Currently calling the same thing as all we need to do is refresh but this has functionality for later in case we need to do more.
-            ProperTabGroupsSubsystem.Instance.RealignTabsToFilteredGroups();
+            DocumentWellManagementSubsystem.Instance.RealignTabsToFilteredGroups();
         }
 
     }

@@ -20,7 +20,7 @@ namespace ProperTabGroups.DualListSelector
 
         private TabInfo currentTabInfo;
 
-        private ProperTabGroupsSubsystem ViewModel => ProperTabGroupsSubsystem.Instance;
+        private DocumentWellManagementSubsystem ViewModel => DocumentWellManagementSubsystem.Instance;
 
         public DualListboxSelectorWindowControl()
         {

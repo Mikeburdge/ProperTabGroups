@@ -15,20 +15,22 @@ using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
 using Window = EnvDTE.Window;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Shell.Interop;
+using ProperTabGroups.Subsystems;
 using Constants = EnvDTE.Constants;
 
 namespace ProperTabGroups.Subsystem
 {
-    public class ProperTabGroupsSubsystem : INotifyPropertyChanged
+    public class DocumentWellManagementSubsystem : ProperTabGroupsSubsystemBase, INotifyPropertyChanged
     {
-        private static ProperTabGroupsSubsystem _instance;
-        private DTE _dte;
+        public new static DocumentWellManagementSubsystem Instance => (DocumentWellManagementSubsystem)(_instance ??= new DocumentWellManagementSubsystem());
+
 
         private ObservableCollection<TabGroup> _groupsDocumentWellSource;
 
         public string UnassignedTabsGroupName = "Unassigned Tabs";
         public Guid UnassignedTabsGroupGuid = Guid.NewGuid();
 
+        public Package package;
         public ObservableCollection<TabGroup> GroupsDocumentWellSource
         {
             get => _groupsDocumentWellSource;
@@ -64,12 +66,10 @@ namespace ProperTabGroups.Subsystem
 
         public ListView GroupsListView { get; set; }
 
-        public static ProperTabGroupsSubsystem Instance => _instance ??= new ProperTabGroupsSubsystem();
 
-        private ProperTabGroupsSubsystem()
+        private DocumentWellManagementSubsystem()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            _dte = Package.GetGlobalService(typeof(DTE)) as DTE;
 
             AllOpenDocuments = new List<TabInfo>();
 
@@ -78,8 +78,6 @@ namespace ProperTabGroups.Subsystem
             {
                 Source = GroupsDocumentWellSource
             };
-
-            Initialize();
         }
 
         private void HandleGroupFunctionality()
@@ -92,37 +90,39 @@ namespace ProperTabGroups.Subsystem
             GroupsDocumentWell.SortDescriptions.Add(new SortDescription(nameof(TabInfo.WindowName), ListSortDirection.Ascending));
         }
 
-        private void Initialize()
+        protected override void Initialise()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            // Initialize Tab Groups based on the current state of the IDE
+            // Initialise Tab Groups based on the current state of the IDE
 
             HandleGroupFunctionality();
-            _dte.Events.SolutionEvents.Opened += SolutionOpened;
 
-            // Example of subscribing to the shutdown event
-            IVsShell shellService = (IVsShell)GetService(typeof(SVsShell));
-            uint cookie;
-            shellService.AdviseShellPropertyChanges(this, out cookie);
 
-        }
 
-        private void SolutionOpened()
-        {
+
+
+
+
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            const string document1Name = "Test Documents";
-            TabGroup document1Group = CreateNewTabGroup(document1Name);
-            CreateNewTabGroup("Test Documents 2");
-            // Loop through all open document windows
-            foreach (Window window in _dte.Windows.Cast<Window>().Where(window => window.Kind.Equals("Document")))
+            List<TabGroup> TabGroups = SaveLoadManager.Instance.InitSaveLoadManager(package, _dte);
+
+            _groupsDocumentWellSource.Clear();
+            foreach (TabGroup tabGroup in TabGroups)
             {
-                AllOpenDocuments.Add(new TabInfo(window, [document1Group.GroupGuid]));
+                _groupsDocumentWellSource.Add(tabGroup);
             }
 
+            //const string document1Name = "Test Documents";
+            //TabGroup document1Group = CreateNewTabGroup(document1Name);
+            //CreateNewTabGroup("Test Documents 2");
+            //// Loop through all open document windows
+            //foreach (Window window in _dte.Windows.Cast<Window>().Where(window => window.Kind.Equals("Document")))
+            //{
+            //    AllOpenDocuments.Add(new TabInfo(window, [document1Group.GroupGuid]));
+            //}
+
             RealignTabsToFilteredGroups();
-            // Trigger Sort Groups Action / Setup Constant Group Sorting based on filters
-            // For now I'm going to add it manually until I get shit up and running
 
             _dte.Events.WindowEvents.WindowCreated += WindowCreated;
         }

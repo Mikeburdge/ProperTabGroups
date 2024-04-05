@@ -5,11 +5,6 @@ VisualStudioVersion = 17.9.34622.214
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProperTabGroups", "ProperTabGroups.csproj", "{B78FA643-02DA-4095-82F3-A704BBB606D8}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AC9A9620-F61E-4804-B29C-7CF1A2AAB57C}"
-	ProjectSection(SolutionItems) = preProject
-		Subsystems\ProperTabGroupsSubsystem.cs = Subsystems\ProperTabGroupsSubsystem.cs
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

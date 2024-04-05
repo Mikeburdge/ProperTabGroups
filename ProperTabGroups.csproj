@@ -46,7 +46,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DualListSelector\DualListboxSelectorWindowControl.xaml.cs" />
-    <Compile Include="ProperTabGroupsSubsystem.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Commands\MyToolWindowCommand.cs" />
     <Compile Include="ProperTabGroupsPackage.cs" />
@@ -55,6 +54,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>source.extension.vsixmanifest</DependentUpon>
     </Compile>
+    <Compile Include="Subsystems\DocumentWellManagementSubsystem.cs" />
+    <Compile Include="Subsystems\ProperTabGroupsSubsystemBase.cs" />
+    <Compile Include="Subsystems\SaveLoadManager.cs" />
     <Compile Include="TabGroupScripts\TabInfo.cs" />
     <Compile Include="VSCommandTable.cs">
       <AutoGen>True</AutoGen>

@@ -24,7 +24,7 @@ namespace ProperTabGroups
 
         private TabInfo _filterModificationCurrentTabInfo = null;
 
-        public ProperTabGroupsSubsystem ViewModel => ProperTabGroupsSubsystem.Instance;
+        public DocumentWellManagementSubsystem ViewModel => DocumentWellManagementSubsystem.Instance;
 
         public ProperTabGroupsWindowControl()
         {
@@ -152,7 +152,7 @@ namespace ProperTabGroups
 
         private void SelectTabGroupInListView(string activatedTabName)
         {
-            List<TabInfo> documentWell = ProperTabGroupsSubsystem.Instance.AllOpenDocuments;
+            List<TabInfo> documentWell = DocumentWellManagementSubsystem.Instance.AllOpenDocuments;
 
             TabInfo matchingTabInfo = documentWell.FirstOrDefault(tabInfo => tabInfo.WindowName.Equals(activatedTabName));
 

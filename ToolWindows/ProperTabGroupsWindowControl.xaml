@@ -26,17 +26,18 @@
         </Style>
 
         <Style TargetType="ListViewItem">
-            <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
-            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
-            <Setter Property="FontFamily" Value="{DynamicResource {x:Static  vsShell:VsFonts.EnvironmentFontFamilyKey}}"/>
-            <Setter Property="FontSize" Value="{DynamicResource {x:Static vsShell:VsFonts.EnvironmentFontSizeKey}}"/>
+            <!--<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>-->
+            <!--<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>-->
+            <!--<Setter Property="FontFamily" Value="{DynamicResource {x:Static  vsShell:VsFonts.EnvironmentFontFamilyKey}}"/>-->
+            <!--<Setter Property="FontSize" Value="{DynamicResource {x:Static vsShell:VsFonts.EnvironmentFontSizeKey}}"/>-->
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>
+                    <!--<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>-->
+
                     <!--<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.DebuggerDataTipActiveHighlightTextKey}}"/>-->
                 </Trigger>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>
+                    <!--<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>-->
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -155,14 +156,12 @@
                     <Setter Property="FontSize" Value="{DynamicResource {x:Static vsShell:VsFonts.EnvironmentFontSizeKey}}"/>
                     <Style.Triggers>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background"
-                                    Value="Transparent" />
-                            <Setter Property="BorderBrush"
-                                    Value="Transparent" />
-                            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.DebuggerDataTipActiveHighlightTextKey}}"/>
+                            <!--<Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.DebuggerDataTipActiveHighlightTextKey}}"/>-->
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>
+                            <!--<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>-->
                         </Trigger>
                     </Style.Triggers>
                 </Style>
@@ -181,7 +180,9 @@
                                 <!-- Style to remove padding and border for the ListViewItem -->
                                 <Setter Property="Padding" Value="0"/>
                                 <Setter Property="Margin" Value="0"/>
+                                
                                 <Setter Property="BorderThickness" Value="1"/>
+                                <!--<Setter Property="BorderBrush" Value="Aqua"/>-->
 
                                 <!-- Style to select the tab when we want it selected -->
                                 <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
@@ -193,15 +194,22 @@
                                 <Setter Property="ContextMenu" Value="{StaticResource TabInfoContextMenu}"/>
 
                                 <!-- Setting the background styles -->
-                                <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
-                                <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
-                                <Setter Property="FontFamily" Value="{DynamicResource {x:Static  vsShell:VsFonts.EnvironmentFontFamilyKey}}"/>
-                                <Setter Property="FontSize" Value="{DynamicResource {x:Static vsShell:VsFonts.EnvironmentFontSizeKey}}"/>
+                                <!--<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>-->
+                                <!--<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>-->
+                                <!--<Setter Property="FontFamily" Value="{DynamicResource {x:Static  vsShell:VsFonts.EnvironmentFontFamilyKey}}"/>-->
+                                <!--<Setter Property="FontSize" Value="{DynamicResource {x:Static vsShell:VsFonts.EnvironmentFontSizeKey}}"/>-->
                                 <Style.Triggers>
-
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="Red"/>
+                                        <!--<Setter Property="BorderBrush" Value="Aqua"/>-->
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </Trigger>
+                                    <!--<Trigger Property="IsFocused" Value="True">
+                                        <Setter Property="BorderBrush" Value="Aqua"/>
+                                    </Trigger>
                                     <Trigger Property="IsMouseOver" Value="True">
                                         <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ToolboxIconHighlightKey}}"/>
-                                    </Trigger>
+                                    </Trigger>-->
                                 </Style.Triggers>
                             </Style>
                         </ListView.ItemContainerStyle>
