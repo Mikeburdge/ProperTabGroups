@@ -97,6 +97,9 @@
         <ContextMenu x:Key="TabInfoContextMenu">
             <MenuItem Header="Modify filters" Click="ModifyFilters_OnClick"></MenuItem>
         </ContextMenu>
+
+
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </UserControl.Resources>
 
     <StackPanel Orientation="Vertical">
@@ -182,7 +185,7 @@
                                 <!-- Style to remove padding and border for the ListViewItem -->
                                 <Setter Property="Padding" Value="0"/>
                                 <Setter Property="Margin" Value="0"/>
-                                
+
                                 <Setter Property="BorderThickness" Value="1"/>
                                 <!--<Setter Property="BorderBrush" Value="Aqua"/>-->
 
@@ -228,6 +231,23 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
+
+        <!--____________________________________________-->
+        <!--_______________UnassignedTabs_______________-->
+        <!--____________________________________________-->
+        <ListView x:Name="UnassignedTabsListView" d:ItemsSource="{d:SampleData ItemCount=2}" ItemsSource="{Binding UnassignedTabsGroup.View}" Visibility="{Binding IsUnassignedListBoxVisible, Converter={StaticResource BoolToVis}}">
+
+            <Style TargetType="ListView" />
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding WindowName}" />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+
+
+
     </StackPanel>
 
 </UserControl>

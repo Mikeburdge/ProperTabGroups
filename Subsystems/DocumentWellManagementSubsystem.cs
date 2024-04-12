@@ -14,6 +14,8 @@ using Window = EnvDTE.Window;
 using System.Diagnostics;
 using ProperTabGroups.Subsystems;
 using Constants = EnvDTE.Constants;
+using System.Globalization;
+using System.Windows;
 
 namespace ProperTabGroups.Subsystem
 {
@@ -24,11 +26,11 @@ namespace ProperTabGroups.Subsystem
 
         private DTE _dte;
 
-        private ObservableCollection<TabGroup> _groupsDocumentWellSource;
-
         private const string UnassignedTabsGroupName = "Unassigned Tabs";
         public static Guid UnassignedTabsGroupGuid = Guid.NewGuid();
 
+        public CollectionViewSource GroupsDocumentWell { get; set; }
+        private ObservableCollection<TabGroup> _groupsDocumentWellSource;
         public ObservableCollection<TabGroup> GroupsDocumentWellSource
         {
             get => _groupsDocumentWellSource;
@@ -52,14 +54,44 @@ namespace ProperTabGroups.Subsystem
                 }
             }
         }
-
         private void OnGroupsDocumentWellSourceChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
         {
-            GroupsDocumentWellSource.OrderBy(x => x.GroupGuid == UnassignedTabsGroupGuid).ThenBy(x => x.Name);
             RefreshAllGroupsView();
         }
 
-        public CollectionViewSource GroupsDocumentWell { get; set; }
+        public bool IsUnassignedListBoxVisible = true;
+        private ObservableCollection<TabInfo> _unassignedTabsGroupSource;
+        public ObservableCollection<TabInfo> UnassignedTabsGroupSource
+        {
+            get => _unassignedTabsGroupSource;
+            set
+            {
+                if (Equals(_groupsDocumentWellSource, value)) return;
+
+                if (_unassignedTabsGroupSource != null)
+                {
+                    // Unsubscribe from the CollectionChanged event of the old collection
+                    _unassignedTabsGroupSource.CollectionChanged -= OnUnassignedTabsSourceChanged;
+                }
+
+                _unassignedTabsGroupSource = value;
+                OnPropertyChanged();
+
+                if (_unassignedTabsGroupSource != null)
+                {
+                    // Subscribe to the CollectionChanged event of the new collection
+                    _unassignedTabsGroupSource.CollectionChanged += OnUnassignedTabsSourceChanged;
+                }
+            }
+        }
+
+        public CollectionViewSource UnassignedTabsGroup { get; set; }
+
+        private void OnUnassignedTabsSourceChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
+        {
+            CollectionViewSource.GetDefaultView(UnassignedTabsGroupSource).Refresh();
+        }
+
 
         public readonly List<TabInfo> AllTabInfos;
 
@@ -74,6 +106,12 @@ namespace ProperTabGroups.Subsystem
 
             AllTabInfos = new List<TabInfo>();
 
+            UnassignedTabsGroupSource = new ObservableCollection<TabInfo>();
+            UnassignedTabsGroup = new CollectionViewSource
+            {
+                Source = UnassignedTabsGroupSource
+            };
+
             GroupsDocumentWellSource = new ObservableCollection<TabGroup>();
             GroupsDocumentWell = new CollectionViewSource
             {
@@ -87,10 +125,14 @@ namespace ProperTabGroups.Subsystem
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            GroupsDocumentWell.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name)));
+            GroupsDocumentWell.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name), ListSortDirection.Ascending));
+            GroupsDocumentWell.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name))); 
 
-            // Sorting documents by FileName
-            //GroupsDocumentWell.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name), ListSortDirection.Ascending));
+            UnassignedTabsGroup.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name), ListSortDirection.Ascending));
+            UnassignedTabsGroup.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name)));
+
+            CollectionViewSource.GetDefaultView(GroupsDocumentWellSource).Refresh();
+            CollectionViewSource.GetDefaultView(UnassignedTabsGroupSource).Refresh();
         }
 
         private void Initialise()
@@ -164,17 +206,10 @@ namespace ProperTabGroups.Subsystem
             // If there is no filters for the document then add it to the unassigned tabs group
             if (tabToIntegrate.Filters.Count.Equals(0))
             {
-                TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(g => g.GroupGuid.Equals(UnassignedTabsGroupGuid));
+                if (UnassignedTabsGroupSource.Contains(tabToIntegrate)) return;
 
-                if (unassignedGroup == null)
-                {
-                    unassignedGroup = new TabGroup(UnassignedTabsGroupName, false, true, UnassignedTabsGroupGuid);
-                    GroupsDocumentWellSource.Add(unassignedGroup);
-                }
+                UnassignedTabsGroupSource.Add(tabToIntegrate);
 
-                unassignedGroup.TabsInGroupSource.Add(tabToIntegrate);
-
-                // If no matching group, consider creating a new group or adding to a default group
                 return;
             }
 
@@ -193,13 +228,6 @@ namespace ProperTabGroups.Subsystem
                     }
                 }
             }
-        }
-
-        public void RefreshAllGroupsAndTabsView()
-        {
-            RefreshAllGroupsView();
-
-            RefreshAllTabsView();
         }
 
         private static void RefreshAllGroupsView()
@@ -227,15 +255,11 @@ namespace ProperTabGroups.Subsystem
                 // If it contains the unassigned filter then ensure the group exists
                 if (tab.Filters.Count == 0)
                 {
-                    TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(g => g.GroupGuid.Equals(UnassignedTabsGroupGuid));
-
-                    if (unassignedGroup == null)
+                    if (!UnassignedTabsGroupSource.Contains(tab))
                     {
-                        unassignedGroup = new TabGroup(UnassignedTabsGroupName, false, true, UnassignedTabsGroupGuid);
-                        GroupsDocumentWellSource.Add(unassignedGroup);
+                        UnassignedTabsGroupSource.Add(tab);
                     }
 
-                    unassignedGroup.TabsInGroupSource.Add(tab);
                     continue;
                 }
 
@@ -257,17 +281,6 @@ namespace ProperTabGroups.Subsystem
             }
         }
 
-        /// <summary>
-        /// Validates the tabs within each group in the document well, ensuring each tab is supposed to be in its current group. 
-        /// Tabs not matching their group's criteria (based on filters) are removed from the group. Note: this does not add tabs to groups, simply removes tabs from groups they aren't meant to be in.
-        /// </summary>
-        /// <remarks>
-        /// This method iterates through all tab groups within the document well (GroupsDocumentWellSource). 
-        /// For each tab in a group, it checks if the group's name exists within the tab's Filters. 
-        /// If a tab's Filters do not contain the name of the group it's in, the tab is removed from the group.
-        /// This ensures that only tabs that meet the group's criteria remain, maintaining the integrity of the groups.
-        /// </remarks>
-        /// <returns>Void. The method does not return a value but modifies the GroupsDocumentWellSource by potentially removing tabs from groups.</returns>
         private void ValidateCurrentGroups()
         {
             foreach (TabGroup tabGroup in GroupsDocumentWellSource)
@@ -282,12 +295,7 @@ namespace ProperTabGroups.Subsystem
                 }
             }
 
-            TabGroup unassignedGroup = GroupsDocumentWellSource.FirstOrDefault(x => x.GroupGuid == UnassignedTabsGroupGuid);
-
-            if (unassignedGroup != null && !unassignedGroup.TabsInGroupSource.Any())
-            {
-                DeleteTabGroup(unassignedGroup);
-            }
+            IsUnassignedListBoxVisible = UnassignedTabsGroupSource.Any();
         }
 
         private bool IsWindowContainedInAnyGroup(Window windowToFind)
