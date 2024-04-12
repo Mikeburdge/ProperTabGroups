@@ -1,14 +1,13 @@
-﻿
-using System;
-using System.IO;
+﻿using System.IO;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
-using Microsoft.VisualStudio.Shell;
 using ProperTabGroups.Subsystem;
 using ProperTabGroups.TabGroupScripts;
 
 using EnvDTE;
+using Solution = EnvDTE.Solution;
 
 namespace ProperTabGroups.Subsystems
 {
@@ -17,55 +16,73 @@ namespace ProperTabGroups.Subsystems
     /// </summary>
     internal class SaveLoadManager
     {
-        private static SaveLoadManager _instance;
 
+        private static SaveLoadManager _instance;
         public static SaveLoadManager Instance => _instance ??= new SaveLoadManager();
 
         private string settingsFilePath;
-        private DTE dte;
-        public Package package;
+        private DTE _dte;
 
-        private bool _isInitialised = false;
+        public SaveLoadManager()
+        {
+            Initialise();
+        }
 
-        private SaveLoadManager() { }
-
-        public List<TabGroup> InitSaveLoadManager()
+        private void Initialise()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            this.package = package ?? throw new ArgumentNullException(nameof(package));
-            this.dte = dte ?? throw new ArgumentNullException(nameof(dte));
+            _dte = (DTE)Package.GetGlobalService(typeof(DTE));
+            _dte.Events.SolutionEvents.Opened += SolutionOpened;
+        }
 
+
+        public void SolutionOpened()
+        {
+            InitSaveLoadManager();
+        }
+        public void InitSaveLoadManager()
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            string solutionName = Path.GetFileNameWithoutExtension(_dte.Solution.FullName);
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string extensionFolder = Path.Combine(appDataPath, "ProperTabGroups");
+            string extensionFolder = Path.Combine(appDataPath, "ProperTabGroups", solutionName);
             if (!Directory.Exists(extensionFolder))
             {
                 Directory.CreateDirectory(extensionFolder);
             }
             settingsFilePath = Path.Combine(extensionFolder, "settings.json");
-
-            // Listen for Visual Studio shutdown event
-            dte.Events.DTEEvents.OnBeginShutdown += SaveTabGroupsOnShutdown;
-
-            _isInitialised = true;
-
-            return LoadTabGroups();
         }
 
-        private void SaveTabGroupsOnShutdown()
+        public void SaveTabGroups()
         {
-            System.Diagnostics.Debug.Assert(_isInitialised, "SaveLoadManager has not been initialised");
+            List<TabGroup> tabGroups = DocumentWellManagementSubsystem.Instance.GroupsDocumentWellSource.ToList();
 
-            List<TabGroup> tabGroups = DocumentWellManagementSubsystem.Instance.GetAllTabGroups().ToList();
+            tabGroups.RemoveAll(x => x.GroupGuid == DocumentWellManagementSubsystem.UnassignedTabsGroupGuid);
             SaveTabGroups(tabGroups);
         }
 
         private void SaveTabGroups(IReadOnlyCollection<TabGroup> tabGroups)
         {
-            System.Diagnostics.Debug.Assert(_isInitialised, "SaveLoadManager has not been initialised");
             ThreadHelper.ThrowIfNotOnUIThread();
             try
             {
-                string json = JsonConvert.SerializeObject(tabGroups, Formatting.Indented);
+                List<SerializableTabGroup> serializableTabGroups = tabGroups.Select(tg => new SerializableTabGroup
+                {
+                    Name = tg.Name,
+                    GroupGuid = tg.GroupGuid,
+                    BIsLocked = tg.BIsLocked,
+                    BIsVisible = tg.BIsVisible,
+                    ColourCode = tg.ColourCode,
+                    Tabs = tg.TabsInGroupSource.Select(ti => new SerializableTabInfo
+                    {
+                        WindowName = ti.WindowName,
+                        DocumentPath = ti.DocumentPath,
+                        Filters = ti.Filters.ToList() // Assuming this is serializable as is
+                    }).ToList()
+                }).ToList();
+
+                string json = JsonConvert.SerializeObject(serializableTabGroups, Formatting.Indented);
                 File.WriteAllText(settingsFilePath, json);
             }
             catch (Exception ex)
@@ -74,24 +91,63 @@ namespace ProperTabGroups.Subsystems
             }
         }
 
-        public List<TabGroup> LoadTabGroups()
+        public List<TabGroup> LoadTabGroupsFromJson()
         {
-            System.Diagnostics.Debug.Assert(_isInitialised, "SaveLoadManager has not been initialised");
-            ThreadHelper.ThrowIfNotOnUIThread();
+            // Deserialize the JSON back into the list of serializable TabGroups
+            List<TabGroup> tabGroups = new List<TabGroup>();
+
             try
             {
                 if (File.Exists(settingsFilePath))
                 {
                     string json = File.ReadAllText(settingsFilePath);
-                    return JsonConvert.DeserializeObject<List<TabGroup>>(json) ?? new List<TabGroup>();
+
+                    List<SerializableTabGroup> serializableTabGroups = JsonConvert.DeserializeObject<List<SerializableTabGroup>>(json);
+
+                    if (serializableTabGroups == null)
+                    {
+                        return new List<TabGroup>();
+                    }
+
+                    IEnumerable<Window> allActiveDocuments = _dte.Windows.Cast<Window>().Where(window => window.Kind is "Document");
+
+                    foreach (SerializableTabGroup serializableTabGroup in serializableTabGroups)
+                    {
+                        TabGroup tabGroup = new(serializableTabGroup.Name, serializableTabGroup.BIsLocked,
+                            serializableTabGroup.BIsVisible, serializableTabGroup.GroupGuid)
+                        {
+                            ColourCode = serializableTabGroup.ColourCode
+                        };
+
+                       
+
+                        foreach (SerializableTabInfo serializableTabInfo in serializableTabGroup.Tabs)
+                        {
+                            Window matchingTabWindow = allActiveDocuments.FirstOrDefault(x => x.Caption == serializableTabInfo.WindowName);
+
+                            TabInfo tabInfo = new TabInfo()
+                            {
+                                //IsSelected = serializableTabInfo.IsSelected,
+                                WindowName = serializableTabInfo.WindowName,
+                                Window = matchingTabWindow, // If this is null anyway it means that when we click to open it it "should" open it safely
+                                DocumentPath = serializableTabInfo.DocumentPath,
+                                ViewKind = serializableTabInfo.ViewKind,
+                                Filters = new ObservableCollection<Guid>(serializableTabInfo.Filters)
+                            };
+
+                            tabGroup.TabsInGroupSource.Add(tabInfo);
+                        }
+
+                        tabGroups.Add(tabGroup);
+                    }
                 }
             }
+
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading tab groups: {ex.Message}");
             }
-
-            return new List<TabGroup>();
+            return tabGroups;
         }
     }
 }

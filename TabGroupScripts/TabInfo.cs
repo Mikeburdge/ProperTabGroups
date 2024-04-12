@@ -61,6 +61,8 @@ namespace ProperTabGroups.TabGroupScripts
             {
                 Source = TabsInGroupSource
             };
+
+            TabsInGroup.SortDescriptions.Add(new SortDescription(nameof(TabInfo.WindowName), ListSortDirection.Ascending));
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -77,6 +79,7 @@ namespace ProperTabGroups.TabGroupScripts
 
     public class TabInfo : INotifyPropertyChanged
     {
+        // todo: probably for the best to create a non-persistent guid. one that is given at the start of the session and used to identify tabd within sessions. MAYBE
         private bool _isSelected;
         public bool IsSelected
         {
@@ -124,13 +127,19 @@ namespace ProperTabGroups.TabGroupScripts
         // Property to hold the window's kind
         public string ViewKind { get; set; }
 
+        public TabInfo()
+        {
 
+        }
         public TabInfo(Window window, ObservableCollection<Guid> filters)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             Window = window;
             Filters = filters;
-            WindowName = window.Caption;
+            if (window != null)
+            {
+                WindowName = window.Caption;
+            }
             DocumentPath = window.Document.FullName;
             ViewKind = window.Kind;
         }
@@ -156,6 +165,24 @@ namespace ProperTabGroups.TabGroupScripts
             DocumentWellManagementSubsystem.Instance.RealignTabsToFilteredGroups();
         }
 
+    }
+
+    public class SerializableTabGroup
+    {
+        public string Name { get; set; }
+        public Guid GroupGuid { get; set; }
+        public bool BIsLocked { get; set; }
+        public bool BIsVisible { get; set; }
+        public string ColourCode { get; set; }
+        public List<SerializableTabInfo> Tabs { get; set; } = new List<SerializableTabInfo>();
+    }
+    public class SerializableTabInfo
+    {
+        public bool IsSelected { get; set; }
+        public string WindowName { get; set; }
+        public string DocumentPath { get; set; }
+        public string ViewKind { get; set; }
+        public List<Guid> Filters { get; set; } = new List<Guid>();
     }
 
 }

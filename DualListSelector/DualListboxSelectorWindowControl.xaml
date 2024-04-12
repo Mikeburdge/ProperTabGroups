@@ -56,12 +56,12 @@
             <TextBlock Text="Available" FontWeight="SemiBold" TextAlignment="Center" LineHeight="20"></TextBlock>
             <TextBlock Grid.Column="2" Text="Active" FontWeight="SemiBold" TextAlignment="Center" LineHeight="20"></TextBlock>
 
-			<ListBox Grid.Column="0" Grid.Row="1" x:Name="LeftListBox" DisplayMemberPath="Name" MinHeight="100"/>
+			<ListBox Grid.Column="0" Grid.Row="1" x:Name="LeftListBox" DisplayMemberPath="Name" MinHeight="100" MouseDoubleClick="MoveRight"/>
 			<StackPanel Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
 				<Button Content="&gt;" Click="MoveRight" Margin="5" Width="20"/>
 				<Button Content="&lt;" Click="MoveLeft" Margin="5" Width="20"/>
 			</StackPanel>
-			<ListBox Grid.Column="2" Grid.Row="1" x:Name="RightListBox" DisplayMemberPath="Name" MinHeight="100"/>
+			<ListBox Grid.Column="2" Grid.Row="1" x:Name="RightListBox" DisplayMemberPath="Name" MinHeight="100" MouseDoubleClick="MoveLeft"/>
 		</Grid>
 		<UniformGrid Rows="1">
 			<Button Content="Ok" Click="OkButtonClick" Width="75" Height="30" IsDefault="True" Margin="10" />

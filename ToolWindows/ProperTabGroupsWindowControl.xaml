@@ -91,6 +91,7 @@
 
         <ContextMenu x:Key="TabGroupContextMenu">
             <MenuItem Header="Rename" ></MenuItem>
+            <MenuItem Header="Delete Group" Click="DeleteGroup_OnClick" />
 
         </ContextMenu>
         <ContextMenu x:Key="TabInfoContextMenu">
@@ -138,13 +139,14 @@
 
                     <Setter Property="BorderThickness" Value="0"/>
 
-                    <!--USE THIS SOMEWHERE TO ENABLE THE BORDER FOR THE LIST VIEW GROUPS-->
-
                     <!-- Style to select the tab when we want it selected -->
                     <!--<Setter Property="IsSelected" Value="{Binding _IsSelected, Mode=TwoWay}" />-->
 
                     <!-- Style to remove focus and more for the ListViewItem -->
                     <Setter Property="Focusable" Value="false"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+
+                    <!-- Style stretch the clickable content to the width of the window-->
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
 
                     <!-- Setting Context Menu for List View Items-->
@@ -172,7 +174,7 @@
                 <DataTemplate DataType="{x:Type tabGroupScripts:TabGroup}">
 
                     <!--<Expander Header="{Binding Name}" IsExpanded="{Binding BIsVisible}">-->
-                    <ListView x:Name="ItemContainerList" ItemsSource="{Binding TabsInGroup.View}" SelectionChanged="ListView_SelectionChanged">
+                    <ListView x:Name="ItemContainerList" ItemsSource="{Binding TabsInGroup.View}" SelectionChanged="ListView_SelectionChanged" MouseDoubleClick="ModifyFilters_OnClick">
 
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
@@ -187,7 +189,7 @@
                                 <!-- Style to select the tab when we want it selected -->
                                 <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
 
-                                <!-- Style to remove focus and more for the ListViewItem -->
+                                <!-- Style stretch the clickable content to the width of the window-->
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
 
                                 <!-- Setting Context Menu for nested List View Items-->

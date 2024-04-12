@@ -42,11 +42,11 @@ namespace ProperTabGroups.DualListSelector
 
         public void PopulateInitialItems(TabInfo inTabInfo)
         {
-            List<TabGroup> tabGroups = ViewModel.GetAllTabGroups().ToList();
+            List<TabGroup> tabGroups = ViewModel.GroupsDocumentWellSource.ToList();
             
             foreach (TabGroup tabGroup in tabGroups.OrderBy(group => group.Name))
             {
-                if (tabGroup.GroupGuid == ViewModel.UnassignedTabsGroupGuid)
+                if (tabGroup.GroupGuid == DocumentWellManagementSubsystem.UnassignedTabsGroupGuid)
                 {
                     continue;
                 }
@@ -120,7 +120,7 @@ namespace ProperTabGroups.DualListSelector
 
             foreach (TabGroup rightItem in RightItems)
             {
-                ViewModel.AddFilterToTab(currentTabInfo, rightItem.GroupGuid);
+                DocumentWellManagementSubsystem.AddFilterToTab(currentTabInfo, rightItem.GroupGuid);
             }
         }
     }

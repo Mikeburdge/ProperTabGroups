@@ -28,19 +28,10 @@ namespace ProperTabGroups
             await this.RegisterCommandsAsync();
 
             this.RegisterToolWindows();
-
-
-            DTE _dte = (DTE)GetGlobalService(typeof(DTE));
-            _dte.Events.SolutionEvents.Opened += SolutionOpened();
-        }
-
-        private _dispSolutionEvents_OpenedEventHandler SolutionOpened()
-        {
-
-            public void SolutionOpened()
-            {
-                SaveLoadManager.Instance.InitSaveLoadManager(this, dte);
-            }
+            
+            // its a bit scuffed but this order initialises the SaveLoadManager first and then the document well stuff accesses it after
+            var init2 = new SolutionEventsListener();
+            var init = DocumentWellManagementSubsystem.Instance;
         }
     }
 }

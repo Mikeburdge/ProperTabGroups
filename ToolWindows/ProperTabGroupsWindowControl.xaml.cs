@@ -13,6 +13,7 @@ using ProperTabGroups.TabGroupScripts;
 using SelectionChangedEventArgs = System.Windows.Controls.SelectionChangedEventArgs;
 using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
 using Window = EnvDTE.Window;
+using System.Windows.Data;
 
 namespace ProperTabGroups
 {
@@ -116,16 +117,20 @@ namespace ProperTabGroups
 
                 foreach (object item in currentListView.Items)
                 {
+                    TabGroup currentTabGroup = item as TabGroup;
+
+                    // we dont care about tab groups so if this can successfully cast to a tab group then we continue;
+                    if (currentTabGroup != null) continue;
+
                     TabInfo currentTabInfo = item as TabInfo;
 
-                    if (currentTabInfo == null) continue;
-
-                    if (currentTabInfo.Window.Visible)
+                    if (currentTabInfo?.Window == null || currentTabInfo.Window.Object == null || currentTabInfo.Window.Visible)
                     {
                         continue;
                     }
 
                     currentTabInfo.IsSelected = false;
+
                 }
             }
         }
@@ -152,7 +157,7 @@ namespace ProperTabGroups
 
         private void SelectTabGroupInListView(string activatedTabName)
         {
-            List<TabInfo> documentWell = DocumentWellManagementSubsystem.Instance.AllOpenDocuments;
+            List<TabInfo> documentWell = DocumentWellManagementSubsystem.Instance.AllTabInfos;
 
             TabInfo matchingTabInfo = documentWell.FirstOrDefault(tabInfo => tabInfo.WindowName.Equals(activatedTabName));
 
@@ -182,7 +187,6 @@ namespace ProperTabGroups
         {
             // Capture the input string
             string userInput = InputTextBox.Text;
-
 
             // Close the popup
             InputPopup.IsOpen = false;
@@ -221,7 +225,9 @@ namespace ProperTabGroups
 
         private void ModifyFilters_OnClick(object sender, RoutedEventArgs e)
         {
-            TabInfo selectedTabInfo = GetClickedTabInfo(sender);
+            //TabInfo selectedTabInfo = GetClickedTabInfo(sender);
+
+            TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
             if (selectedTabInfo == null) return;
 
             DualListboxSelectorWindowControl selectorWindow = new();
@@ -239,5 +245,34 @@ namespace ProperTabGroups
             TabInfo selectedTabInfo = dataContext as TabInfo;
             return selectedTabInfo;
         }
+
+        private void DeleteGroup_OnClick(object sender, RoutedEventArgs e)
+        {
+            MenuItem menuItem = sender as MenuItem;
+            ContextMenu contextMenu = menuItem.Parent as ContextMenu;
+            FrameworkElement placementTarget = contextMenu.PlacementTarget as FrameworkElement;
+            object dataContext = FindDataContextForFrameworkElement(placementTarget);
+
+            // Check if the dataContext is a CollectionViewGroup
+            if (dataContext is CollectionViewGroup collectionViewGroup)
+            {
+                // Access the items in the group
+                foreach (object item in collectionViewGroup.Items)
+                {
+                    // Now you can work with each item, which might be of the type TabGroup
+                    TabGroup tabGroup = item as TabGroup;
+                    if (tabGroup == null) continue;
+                    ViewModel.DeleteTabGroup(tabGroup);
+                    return;
+                }
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"DataContext is not a CollectionViewGroup.");
+            }
+
+            // Rest of your method...
+        }
+
     }
 }
