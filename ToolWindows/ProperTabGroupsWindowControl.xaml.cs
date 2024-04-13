@@ -225,9 +225,9 @@ namespace ProperTabGroups
 
         private void ModifyFilters_OnClick(object sender, RoutedEventArgs e)
         {
-            //TabInfo selectedTabInfo = GetClickedTabInfo(sender);
+            TabInfo selectedTabInfo = GetClickedTabInfo(sender);
 
-            TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
+            //TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
             if (selectedTabInfo == null) return;
 
             DualListboxSelectorWindowControl selectorWindow = new();
@@ -237,13 +237,26 @@ namespace ProperTabGroups
 
         private TabInfo GetClickedTabInfo(object sender)
         {
-            MenuItem menuItem = sender as MenuItem;
-            ContextMenu contextMenu = menuItem.Parent as ContextMenu;
-            FrameworkElement placementTarget = contextMenu.PlacementTarget as FrameworkElement;
-            object dataContext = FindDataContextForFrameworkElement(placementTarget);
+            if (sender is MenuItem menuItem)
+            {
+                ContextMenu contextMenu = menuItem.Parent as ContextMenu;
 
-            TabInfo selectedTabInfo = dataContext as TabInfo;
-            return selectedTabInfo;
+                FrameworkElement placementTarget = contextMenu.PlacementTarget as FrameworkElement;
+                object dataContext = FindDataContextForFrameworkElement(placementTarget);
+
+                TabInfo selectedTabInfo = dataContext as TabInfo;
+                return selectedTabInfo;
+            }
+
+            ListView listView = sender as ListView;
+
+            if (listView == null) return null;
+
+            TabInfo listViewTabInfo = listView.SelectedItem as TabInfo;
+
+            if (listViewTabInfo == null) return null;
+
+            return listViewTabInfo;
         }
 
         private void DeleteGroup_OnClick(object sender, RoutedEventArgs e)
