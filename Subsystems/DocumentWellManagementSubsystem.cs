@@ -188,7 +188,14 @@ namespace ProperTabGroups.Subsystem
 
             if (IsWindowContainedInAnyGroup(window)) return;
 
-            IntegrateNewTabIntoGroups(new TabInfo(window, []));
+
+            TabInfo tab = GetTabByName(window.Caption);
+
+            if (tab == null)
+            {
+                tab = new TabInfo(window, [UnassignedTabsGroupGuid]);
+            }
+            IntegrateNewTabIntoGroups(tab);
         }
 
         private void WindowClosing(Window Window)
@@ -218,11 +225,15 @@ namespace ProperTabGroups.Subsystem
                 {
                     potentialTabInfo.Window = tabToIntegrate.Window;
                 }
+                if (!potentialTabInfo.Filters.Any())
+                {
+                    potentialTabInfo.Filters.Add(UnassignedTabsGroupGuid);
+                }
                 return;
             }
 
             // If there is no filters for the document then add it to the unassigned tabs group
-            if (!tabToIntegrate.Filters.Any() || (tabToIntegrate.Filters.Count == 1 && tabToIntegrate.Filters.Contains(ClosedFileGuid)))
+            if (!tabToIntegrate.Filters.Any())
             {
                 //if (UnassignedTabsGroupSource.Contains(tabToIntegrate))
                 //{ 
@@ -358,7 +369,10 @@ namespace ProperTabGroups.Subsystem
             }
             //IsUnassignedListBoxVisible = UnassignedTabsGroupSource.Any();
         }
-
+        private TabInfo GetTabByName(string inName)
+        {
+            return AllTabInfos.FirstOrDefault(x => x.WindowName == inName);
+        }
         private bool IsWindowContainedInAnyGroup(Window windowToFind)
         {
             foreach (TabGroup tabGroup in GroupsDocumentWellSource)
