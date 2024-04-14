@@ -16,6 +16,7 @@ using ProperTabGroups.Subsystems;
 using Constants = EnvDTE.Constants;
 using System.Globalization;
 using System.Windows;
+using Microsoft.VisualStudio.PlatformUI;
 
 namespace ProperTabGroups.Subsystem
 {
@@ -89,7 +90,9 @@ namespace ProperTabGroups.Subsystem
 
         private void OnUnassignedTabsSourceChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
         {
-            CollectionViewSource.GetDefaultView(UnassignedTabsGroupSource).Refresh();
+            //IsUnassignedListBoxVisible = UnassignedTabsGroupSource.Any();
+
+            RefreshUnassignedGroupsListView();
         }
 
 
@@ -126,12 +129,13 @@ namespace ProperTabGroups.Subsystem
             ThreadHelper.ThrowIfNotOnUIThread();
 
             GroupsDocumentWell.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name), ListSortDirection.Ascending));
-            GroupsDocumentWell.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name))); 
+            GroupsDocumentWell.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name)));
+
+            CollectionViewSource.GetDefaultView(GroupsDocumentWellSource).Refresh();
 
             UnassignedTabsGroup.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name), ListSortDirection.Ascending));
             UnassignedTabsGroup.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name)));
 
-            CollectionViewSource.GetDefaultView(GroupsDocumentWellSource).Refresh();
             CollectionViewSource.GetDefaultView(UnassignedTabsGroupSource).Refresh();
         }
 
@@ -150,7 +154,7 @@ namespace ProperTabGroups.Subsystem
             ThreadHelper.ThrowIfNotOnUIThread();
 
             List<TabGroup> tabGroups = SaveLoadManager.Instance.LoadTabGroupsFromJson();
-            
+
             AllTabInfos.Clear();
             _groupsDocumentWellSource.Clear();
             foreach (TabGroup tabGroup in tabGroups)
@@ -230,6 +234,12 @@ namespace ProperTabGroups.Subsystem
             }
         }
 
+        private static void RefreshUnassignedGroupsListView()
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            CollectionViewSource.GetDefaultView(Instance.UnassignedTabsGroupSource).Refresh();
+        }
+
         private static void RefreshAllGroupsView()
         {
             CollectionViewSource.GetDefaultView(Instance.GroupsDocumentWellSource).Refresh();
@@ -243,39 +253,90 @@ namespace ProperTabGroups.Subsystem
             }
         }
 
+        //public void RealignTabsToFilteredGroups()
+        //{
+        //    ThreadHelper.ThrowIfNotOnUIThread();
+
+        //    ValidateCurrentGroups();
+
+        //    // Iterate over tab infos
+        //    foreach (TabInfo tab in AllTabInfos)
+        //    {
+        //        if (!tab.Filters.Any() && !UnassignedTabsGroupSource.Contains(tab))
+        //        {
+        //            UnassignedTabsGroupSource.Add(tab);
+        //            continue;
+        //        }
+        //        // Determine the correct group for each tab based on its filters
+        //        foreach (Guid filter in tab.Filters)
+        //        {
+        //            // Collect all groups this tag should be in
+        //            IEnumerable<TabGroup> matchingGroups = GroupsDocumentWellSource.Where(g => g.GroupGuid == filter);
+
+        //            foreach (TabGroup group in matchingGroups)
+        //            {
+        //                // If the tag isn't already in the group then add it
+        //                if (!group.TabsInGroupSource.Contains(tab))
+        //                {
+        //                    group.TabsInGroupSource.Add(tab);
+        //                }
+        //            }
+
+        //        }
+        //    }
+        //}
         public void RealignTabsToFilteredGroups()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
             ValidateCurrentGroups();
 
-            // Iterate over tab infos
+            // Create a dictionary for quick lookup
+            Dictionary<Guid, TabGroup> groupLookup = GroupsDocumentWellSource.ToDictionary(g => g.GroupGuid, g => g);
+
+            // Preprocess all tabs and organize them by required groups
+            Dictionary<TabGroup, HashSet<TabInfo>> tabsToGroup = new Dictionary<TabGroup, HashSet<TabInfo>>();
+
             foreach (TabInfo tab in AllTabInfos)
             {
-                // If it contains the unassigned filter then ensure the group exists
-                if (tab.Filters.Count == 0)
+                bool isUnassigned = true;
+
+                foreach (Guid filter in tab.Filters)
+                {
+                    if (groupLookup.TryGetValue(filter, out TabGroup group))
+                    {
+                        isUnassigned = false;
+
+                        // Initialize the hash set for this group if it doesn't exist
+                        if (!tabsToGroup.TryGetValue(group, out HashSet<TabInfo> tabs))
+                        {
+                            tabs = new HashSet<TabInfo>();
+                            tabsToGroup[group] = tabs;
+                        }
+
+                        // Add tab to this group's set
+                        tabs.Add(tab);
+                    }
+                }
+
+                // If no filters or no groups matched, add to unassigned
+                if (isUnassigned)
                 {
                     if (!UnassignedTabsGroupSource.Contains(tab))
                     {
                         UnassignedTabsGroupSource.Add(tab);
                     }
-
-                    continue;
                 }
+            }
 
-                // Determine the correct group for each tab based on its filters
-                foreach (Guid filter in tab.Filters)
+            // Add tabs to their groups if they are not already there
+            foreach (KeyValuePair<TabGroup, HashSet<TabInfo>> group in tabsToGroup)
+            {
+                foreach (TabInfo tab in group.Value)
                 {
-                    // Collect all groups this tag should be in
-                    IEnumerable<TabGroup> matchingGroups = GroupsDocumentWellSource.Where(g => g.GroupGuid == filter);
-
-                    foreach (TabGroup group in matchingGroups)
+                    if (!group.Key.TabsInGroupSource.Contains(tab))
                     {
-                        // If the tag isn't already in the group then add it
-                        if (!group.TabsInGroupSource.Contains(tab))
-                        {
-                            group.TabsInGroupSource.Add(tab);
-                        }
+                        group.Key.TabsInGroupSource.Add(tab);
                     }
                 }
             }
@@ -294,8 +355,15 @@ namespace ProperTabGroups.Subsystem
                     }
                 }
             }
-
-            IsUnassignedListBoxVisible = UnassignedTabsGroupSource.Any();
+            for (int i = UnassignedTabsGroupSource.Count - 1; i >= 0; i--)
+            {
+                TabInfo tab = UnassignedTabsGroupSource[i];
+                if (!tab.Filters.Contains(UnassignedTabsGroupGuid))
+                {
+                    UnassignedTabsGroupSource.RemoveAt(i);
+                }
+            }
+            //IsUnassignedListBoxVisible = UnassignedTabsGroupSource.Any();
         }
 
         private bool IsWindowContainedInAnyGroup(Window windowToFind)
@@ -400,6 +468,7 @@ namespace ProperTabGroups.Subsystem
 
         public void RemoveFilterFromTab(TabInfo tabInfo, Guid filter)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             if (!tabInfo.Filters.Contains(filter)) return;
 
             tabInfo.Filters.Remove(filter);
