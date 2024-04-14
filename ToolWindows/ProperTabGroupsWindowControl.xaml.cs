@@ -124,7 +124,7 @@ namespace ProperTabGroups
 
                     TabInfo currentTabInfo = item as TabInfo;
 
-                    if (currentTabInfo?.Window == null || currentTabInfo.Window.Object == null || currentTabInfo.Window.Visible)
+                    if (!(currentTabInfo?.Window == null || currentTabInfo.Window.Object == null ) && currentTabInfo.Window.Visible)
                     {
                         continue;
                     }

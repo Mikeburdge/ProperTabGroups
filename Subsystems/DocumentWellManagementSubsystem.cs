@@ -222,15 +222,15 @@ namespace ProperTabGroups.Subsystem
             }
 
             // If there is no filters for the document then add it to the unassigned tabs group
-            if (!tabToIntegrate.Filters.Any())
+            if (!tabToIntegrate.Filters.Any() || (tabToIntegrate.Filters.Count == 1 && tabToIntegrate.Filters.Contains(ClosedFileGuid)))
             {
-                if (UnassignedTabsGroupSource.Contains(tabToIntegrate))
-                { 
-                    return; 
-                }
+                //if (UnassignedTabsGroupSource.Contains(tabToIntegrate))
+                //{ 
+                //    return; 
+                //}
 
-                tabToIntegrate.MarkTabAsUnassigned();
-                UnassignedTabsGroupSource.Add(tabToIntegrate);
+                tabToIntegrate.Filters.Add(UnassignedTabsGroupGuid);
+
                 //if (!AllTabInfos.Contains(tabToIntegrate))
                 //{
                 //    AllTabInfos.Add(tabToIntegrate);
@@ -481,7 +481,7 @@ namespace ProperTabGroups.Subsystem
             // If this tab contains no filters add it to the unassigned group
             if (!tabInfo.Filters.Any())
             {
-                tabInfo.MarkTabAsUnassigned();
+                tabInfo.Filters.Add(UnassignedTabsGroupGuid);
             }
         }
 
@@ -522,19 +522,6 @@ namespace ProperTabGroups.Subsystem
                 return;
             }
 
-
-            if (selectedTabInfo.Window?.Object != null)
-            {
-                Window window = selectedTabInfo.Window;
-                if (!window.Visible)
-                {
-                    window.Visible = true;
-                }
-                window.Activate();
-                return;
-            }
-
-
             string filePath = selectedTabInfo.DocumentPath;
 
             // Ensure the file path exists to prevent exceptions when trying to open it.
@@ -550,7 +537,10 @@ namespace ProperTabGroups.Subsystem
                 // Open the file with a specific view kind if necessary. Here, using the default text view.
                 const string fileKind = Constants.vsViewKindCode; // This is typically for text files.
                 _dte.ItemOperations.OpenFile(filePath, fileKind);
-                //selectedTabInfo.MarkTabAsOpen();
+                //if (!selectedTabInfo.Filters.Any())
+                //{
+                //    selectedTabInfo.Filters.Add(UnassignedTabsGroupGuid);
+                //}
             }
             catch (Exception ex)
             {

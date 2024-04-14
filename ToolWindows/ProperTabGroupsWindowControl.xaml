@@ -258,6 +258,7 @@
                   ItemsSource="{Binding UnassignedTabsGroup.View}" 
                   Visibility="{Binding IsUnassignedListBoxVisible, Converter={StaticResource BoolToVis}}"
                   ItemContainerStyle="{StaticResource TabInfoListViewStyle}"
+                  SelectionChanged="ListView_SelectionChanged" 
                   MouseDoubleClick="ModifyFilters_OnClick">
 
             <!--____________________________________________-->
