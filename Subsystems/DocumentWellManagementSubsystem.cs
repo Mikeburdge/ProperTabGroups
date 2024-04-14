@@ -17,6 +17,7 @@ using Constants = EnvDTE.Constants;
 using System.Globalization;
 using System.Windows;
 using Microsoft.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.Experimentation;
 
 namespace ProperTabGroups.Subsystem
 {
@@ -29,6 +30,7 @@ namespace ProperTabGroups.Subsystem
 
         private const string UnassignedTabsGroupName = "Unassigned Tabs";
         public static Guid UnassignedTabsGroupGuid = Guid.NewGuid();
+        public static Guid ClosedFileGuid = new Guid("045ca0af-b76a-4222-9958-12a287a26e68");
 
         public CollectionViewSource GroupsDocumentWell { get; set; }
         private ObservableCollection<TabGroup> _groupsDocumentWellSource;
@@ -174,6 +176,7 @@ namespace ProperTabGroups.Subsystem
             RealignTabsToFilteredGroups();
 
             _dte.Events.WindowEvents.WindowCreated += WindowCreated;
+            _dte.Events.WindowEvents.WindowClosing += WindowClosing;
         }
 
         private void WindowCreated(Window window)
@@ -182,22 +185,33 @@ namespace ProperTabGroups.Subsystem
 
             //if (window.Object == null) return;
 
+
             if (IsWindowContainedInAnyGroup(window)) return;
 
             IntegrateNewTabIntoGroups(new TabInfo(window, []));
+        }
+
+        private void WindowClosing(Window Window)
+        {
+            TabInfo tabInfo = GetTabInfoFromWindow(Window);
+            if (tabInfo == null) return;
+            if (!tabInfo.Filters.Any())
+            {
+                tabInfo.Filters.Add(ClosedFileGuid);
+            }
         }
 
         private void IntegrateNewTabIntoGroups(TabInfo tabToIntegrate)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            TabInfo potentialTabInfo = new TabInfo();
 
             if (IsTabContainedInAnyGroup(tabToIntegrate))
             {
                 return;
             }
 
+            TabInfo potentialTabInfo = new TabInfo();
             if (IsTabContainedInAnyGroupByName(tabToIntegrate, ref potentialTabInfo))
             {
                 if (potentialTabInfo.Window?.Object == null)
@@ -208,30 +222,37 @@ namespace ProperTabGroups.Subsystem
             }
 
             // If there is no filters for the document then add it to the unassigned tabs group
-            if (tabToIntegrate.Filters.Count.Equals(0))
+            if (!tabToIntegrate.Filters.Any())
             {
-                if (UnassignedTabsGroupSource.Contains(tabToIntegrate)) return;
+                if (UnassignedTabsGroupSource.Contains(tabToIntegrate))
+                { 
+                    return; 
+                }
 
+                tabToIntegrate.MarkTabAsUnassigned();
                 UnassignedTabsGroupSource.Add(tabToIntegrate);
-
+                //if (!AllTabInfos.Contains(tabToIntegrate))
+                //{
+                //    AllTabInfos.Add(tabToIntegrate);
+                //}
                 return;
             }
 
-            // Determine the correct group for each tab based on its filters
-            foreach (Guid filter in tabToIntegrate.Filters)
-            {
-                // Collect all groups this tag should be in
-                IEnumerable<TabGroup> matchingGroups = GroupsDocumentWellSource.Where(g => g.GroupGuid == filter);
+            //// Determine the correct group for each tab based on its filters
+            //foreach (Guid filter in tabToIntegrate.Filters)
+            //{
+            //    // Collect all groups this tag should be in
+            //    IEnumerable<TabGroup> matchingGroups = GroupsDocumentWellSource.Where(g => g.GroupGuid == filter);
 
-                foreach (TabGroup group in matchingGroups)
-                {
-                    // If the tag isn't already in the group then add it
-                    if (!group.TabsInGroupSource.Contains(tabToIntegrate))
-                    {
-                        group.TabsInGroupSource.Add(tabToIntegrate);
-                    }
-                }
-            }
+            //    foreach (TabGroup group in matchingGroups)
+            //    {
+            //        // If the tag isn't already in the group then add it
+            //        if (!group.TabsInGroupSource.Contains(tabToIntegrate))
+            //        {
+            //            group.TabsInGroupSource.Add(tabToIntegrate);
+            //        }
+            //    }
+            //}
         }
 
         private static void RefreshUnassignedGroupsListView()
@@ -253,38 +274,6 @@ namespace ProperTabGroups.Subsystem
             }
         }
 
-        //public void RealignTabsToFilteredGroups()
-        //{
-        //    ThreadHelper.ThrowIfNotOnUIThread();
-
-        //    ValidateCurrentGroups();
-
-        //    // Iterate over tab infos
-        //    foreach (TabInfo tab in AllTabInfos)
-        //    {
-        //        if (!tab.Filters.Any() && !UnassignedTabsGroupSource.Contains(tab))
-        //        {
-        //            UnassignedTabsGroupSource.Add(tab);
-        //            continue;
-        //        }
-        //        // Determine the correct group for each tab based on its filters
-        //        foreach (Guid filter in tab.Filters)
-        //        {
-        //            // Collect all groups this tag should be in
-        //            IEnumerable<TabGroup> matchingGroups = GroupsDocumentWellSource.Where(g => g.GroupGuid == filter);
-
-        //            foreach (TabGroup group in matchingGroups)
-        //            {
-        //                // If the tag isn't already in the group then add it
-        //                if (!group.TabsInGroupSource.Contains(tab))
-        //                {
-        //                    group.TabsInGroupSource.Add(tab);
-        //                }
-        //            }
-
-        //        }
-        //    }
-        //}
         public void RealignTabsToFilteredGroups()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -361,6 +350,10 @@ namespace ProperTabGroups.Subsystem
                 if (!tab.Filters.Contains(UnassignedTabsGroupGuid))
                 {
                     UnassignedTabsGroupSource.RemoveAt(i);
+                }
+                if (tab.Filters.Contains(ClosedFileGuid))
+                {
+                    AllTabInfos.Remove(tab);
                 }
             }
             //IsUnassignedListBoxVisible = UnassignedTabsGroupSource.Any();
@@ -443,6 +436,18 @@ namespace ProperTabGroups.Subsystem
             return list;
         }
 
+        public TabInfo GetTabInfoFromWindow(Window window)
+        {
+            foreach (TabInfo currentTabInfo in AllTabInfos)
+            {
+                if (currentTabInfo.Window == window)
+                {
+                    return currentTabInfo;
+                }
+            }
+            return null;
+        }
+
         public string GetGroupNameFromGuid(Guid inGuid)
         {
             return (from @group in GroupsDocumentWellSource where inGuid.Equals(@group.GroupGuid) select @group.Name).FirstOrDefault();
@@ -476,7 +481,7 @@ namespace ProperTabGroups.Subsystem
             // If this tab contains no filters add it to the unassigned group
             if (!tabInfo.Filters.Any())
             {
-                AddFilterToTab(tabInfo, UnassignedTabsGroupGuid);
+                tabInfo.MarkTabAsUnassigned();
             }
         }
 
@@ -517,6 +522,19 @@ namespace ProperTabGroups.Subsystem
                 return;
             }
 
+
+            if (selectedTabInfo.Window?.Object != null)
+            {
+                Window window = selectedTabInfo.Window;
+                if (!window.Visible)
+                {
+                    window.Visible = true;
+                }
+                window.Activate();
+                return;
+            }
+
+
             string filePath = selectedTabInfo.DocumentPath;
 
             // Ensure the file path exists to prevent exceptions when trying to open it.
@@ -532,6 +550,7 @@ namespace ProperTabGroups.Subsystem
                 // Open the file with a specific view kind if necessary. Here, using the default text view.
                 const string fileKind = Constants.vsViewKindCode; // This is typically for text files.
                 _dte.ItemOperations.OpenFile(filePath, fileKind);
+                //selectedTabInfo.MarkTabAsOpen();
             }
             catch (Exception ex)
             {

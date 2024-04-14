@@ -127,6 +127,15 @@ namespace ProperTabGroups.TabGroupScripts
         // Property to hold the window's kind
         public string ViewKind { get; set; }
 
+        public void MarkTabAsAssigned()
+        {
+
+        }
+
+        public void MarkTabAsUnassigned() => Filters.Add(DocumentWellManagementSubsystem.UnassignedTabsGroupGuid);
+
+
+
         public TabInfo()
         {
 
