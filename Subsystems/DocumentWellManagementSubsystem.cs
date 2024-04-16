@@ -322,31 +322,67 @@ namespace ProperTabGroups.Subsystem
             return new TabInfo(window, []) { State = TabState.Unassigned };
         }
 
-        private void WindowClosing(Window Window)
+        private void WindowClosing(Window closingWindow)
         {
-            TabInfo tabInfo = GetTabInfoFromWindow(Window);
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            // Retrieve the associated TabInfo using the window reference
+            TabInfo tabInfo = GetTabInfoFromWindow(closingWindow);
 
             if (tabInfo == null)
             {
-                tabInfo = GetTabInfoByName(Window.Caption);
+                // If no TabInfo is found by window reference, try finding it by name
+                tabInfo = GetTabInfoByName(closingWindow.Caption);
                 if (tabInfo == null)
                 {
+                    // If still not found, simply return as there's nothing to close
+                    Debug.WriteLine($"No TabInfo found for closing window: {closingWindow.Caption}");
                     return;
                 }
             }
 
-            if (UnassignedTabsGroupSource.Contains(tabInfo))
+            // Process the TabInfo based on its current group assignment
+            if (tabInfo.Filters.Contains(UnassignedTabsGroupGuid) || UnassignedTabsGroupSource.Contains(tabInfo))
             {
+                // Remove from unassigned tabs if it's listed there
                 UnassignedTabsGroupSource.Remove(tabInfo);
-                AllTabInfos.Remove(tabInfo);
-                //tabInfo.Filters.Add(ClosedFileGuid);
+                Debug.WriteLine("TabInfo removed from unassigned tabs.");
+
+                // Check if the TabInfo is contained in any group
+                if (!IsTabContainedInAnyGroup(tabInfo))
+                {
+                    // Only remove from AllTabInfos if not contained in any group
+                    AllTabInfos.Remove(tabInfo);
+                    Debug.WriteLine("TabInfo removed from all tabs.");
+                }
+            }
+            else
+            {
+                //RemoveTabInfoFromGroups(tabInfo);
             }
 
-            //if (!tabInfo.Filters.Any() || tabInfo.Filters.Contains(UnassignedTabsGroupGuid))
-            //{
-            //    UnassignedTabsGroupSource.Remove(tabInfo);
-            //    //tabInfo.Filters.Add(ClosedFileGuid);
-            //}
+            // Optionally, perform additional cleanup or state updates
+            PostTabInfoRemovalCleanup(tabInfo);
+        }
+
+        // Helper methods used in WindowClosing
+        private void RemoveTabInfoFromGroups(TabInfo tabInfo)
+        {
+            foreach (TabGroup group in GroupsDocumentWellSource)
+            {
+                if (group.TabsInGroupSource.Remove(tabInfo))
+                {
+                    Debug.WriteLine($"TabInfo removed from group: {group.Name}");
+                    //break;  // Assuming a TabInfo can only be in one group at a time
+                }
+            }
+        }
+
+        private void PostTabInfoRemovalCleanup(TabInfo tabInfo)
+        {
+            // This method can handle any additional logic needed after a tab is removed
+            // For example, saving state, updating UI, logging, etc.
+            Debug.WriteLine($"Cleanup performed for TabInfo: {tabInfo.WindowName}");
         }
 
         private void IntegrateNewTabIntoGroups(TabInfo tabToIntegrate)
