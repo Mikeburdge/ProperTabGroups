@@ -113,7 +113,7 @@ namespace ProperTabGroups
         {
             foreach (ListView currentListView in GetAllListViews(this))
             {
-                if (currentListView == sender) continue; // Check to avoid clearing the selection of the current ListView
+                //if (currentListView == sender) continue; // Check to avoid clearing the selection of the current ListView
 
                 foreach (object item in currentListView.Items)
                 {

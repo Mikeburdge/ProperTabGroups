@@ -18,6 +18,7 @@ using System.Globalization;
 using System.Windows;
 using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Experimentation;
+using System.Net.NetworkInformation;
 
 namespace ProperTabGroups.Subsystem
 {
@@ -170,7 +171,7 @@ namespace ProperTabGroups.Subsystem
             {
                 if (AllTabInfos.Any(x => x.WindowName.Equals(window.Caption))) continue;
 
-                AllTabInfos.Add(new TabInfo(window, []));
+                AddUniqueTabToAllTabs(new TabInfo(window, []));
             }
 
             RealignTabsToFilteredGroups();
@@ -178,34 +179,174 @@ namespace ProperTabGroups.Subsystem
             _dte.Events.WindowEvents.WindowCreated += WindowCreated;
             _dte.Events.WindowEvents.WindowClosing += WindowClosing;
         }
-
-        private void WindowCreated(Window window)
+        private void WindowCreated(Window newWindow)
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            TabInfo tabInfo = FindOrCreateTabInfo(newWindow);
 
-            //if (window.Object == null) return;
-
-
-            if (IsWindowContainedInAnyGroup(window)) return;
-
-
-            TabInfo tab = GetTabByName(window.Caption);
-
-            if (tab == null)
+            switch (tabInfo.State)
             {
-                tab = new TabInfo(window, [UnassignedTabsGroupGuid]);
+                case TabState.Grouped:
+                    HandleInGroup(tabInfo, newWindow);
+                    break;
+                case TabState.Unassigned:
+                    HandleUngrouped(tabInfo, newWindow);
+                    break;
+                case TabState.Invalid:
+                    HandleInvalid(tabInfo, newWindow);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
-            IntegrateNewTabIntoGroups(tab);
+
+            if (!AllTabInfos.Contains(tabInfo))
+            {
+                AllTabInfos.Add(tabInfo);
+            }
+            RealignTabsToFilteredGroups();
+        }
+
+        private void HandleInGroup(TabInfo tabInfo, Window newWindow)
+        {
+            TabInfo activeTabInfo = new();
+            if (IsTabContainedInAnyGroupByName(tabInfo.WindowName, ref activeTabInfo))
+            {
+                activeTabInfo.Window = newWindow;
+                activeTabInfo.State = TabState.Grouped;
+            }
+            else
+            {
+                tabInfo.State = TabState.Unassigned;
+                HandleUngrouped(tabInfo, newWindow);
+            }
+        }
+
+        private void HandleUngrouped(TabInfo tabInfo, Window newWindow)
+        {
+            if (UnassignedTabsGroupSource.Contains(tabInfo) || UnassignedTabsGroupSource.Any(x => x.WindowName == newWindow.Caption))
+            {
+                tabInfo.Window = newWindow;
+                tabInfo.State = TabState.Unassigned;
+                return;
+            }
+            
+            if (!tabInfo.Filters.Any())
+            {
+                tabInfo.Filters.Add(UnassignedTabsGroupGuid);
+            }
+        }
+
+        private void HandleInvalid(TabInfo tabInfo, Window newWindow)
+        {
+            // Check if the window or TabInfo can be validated or corrected
+            if (IsWindowValid(newWindow) && IsTabInfoCorrectable(tabInfo))
+            {
+                // Attempt to correct the TabInfo based on the new window information
+                CorrectTabInfo(tabInfo, newWindow);
+                // After correction, re-evaluate the state
+                TabState newState = EvaluateTabState(tabInfo);
+                tabInfo.State = newState;
+                // Call the appropriate method based on the new state
+                switch (newState)
+                {
+                    case TabState.Grouped:
+                        HandleInGroup(tabInfo, newWindow);
+                        break;
+                    case TabState.Unassigned:
+                        HandleUngrouped(tabInfo, newWindow);
+                        break;
+                    default:
+                        // If state remains invalid, log and remove
+                        LogAndRemoveInvalidTabInfo(tabInfo);
+                        break;
+                }
+            }
+            else
+            {
+                // If not correctable, log the issue and remove TabInfo from management
+                LogAndRemoveInvalidTabInfo(tabInfo);
+            }
+        }
+
+        // Helper methods that might be used in HandleInvalid()
+        private bool IsWindowValid(Window window)
+        {
+            // Implement validation logic for the window, e.g., check for non-null, correct type, etc.
+            return window != null && !string.IsNullOrWhiteSpace(window.Caption);
+        }
+
+        private bool IsTabInfoCorrectable(TabInfo tabInfo)
+        {
+            // Implement logic to determine if the TabInfo can be corrected, e.g., check attributes, linked data, etc.
+            return tabInfo != null && !string.IsNullOrWhiteSpace(tabInfo.WindowName);
+        }
+
+        private void CorrectTabInfo(TabInfo tabInfo, Window window)
+        {
+            // Implement logic to correct the TabInfo based on new or existing window information
+            tabInfo.Window = window;
+            tabInfo.WindowName = window.Caption; // Update TabInfo with correct window caption
+        }
+
+        private TabState EvaluateTabState(TabInfo tabInfo)
+        {
+            // Logic to evaluate the new state of the tabInfo after correction
+            return IsTabContainedInAnyGroup(tabInfo) ? TabState.Grouped : TabState.Unassigned;
+        }
+
+        private void LogAndRemoveInvalidTabInfo(TabInfo tabInfo)
+        {
+            Debug.WriteLine($"Invalid TabInfo detected and removed: {tabInfo.WindowName}");
+            AllTabInfos.Remove(tabInfo);
+            if (UnassignedTabsGroupSource.Contains(tabInfo))
+            {
+                UnassignedTabsGroupSource.Remove(tabInfo);
+            }
+        }
+
+        private TabInfo FindOrCreateTabInfo(Window window)
+        {
+            TabInfo tabInfoByWindow = GetTabInfoFromWindow(window);
+            if (tabInfoByWindow != null)
+            {
+                return tabInfoByWindow;
+            }
+
+            TabInfo tabInfoByName = GetTabInfoByName(window.Caption);
+
+            if (tabInfoByName != null)
+            {
+                return tabInfoByName;
+            }
+
+
+            return new TabInfo(window, []) { State = TabState.Unassigned };
         }
 
         private void WindowClosing(Window Window)
         {
             TabInfo tabInfo = GetTabInfoFromWindow(Window);
-            if (tabInfo == null) return;
-            if (!tabInfo.Filters.Any())
+
+            if (tabInfo == null)
             {
-                tabInfo.Filters.Add(ClosedFileGuid);
+                tabInfo = GetTabInfoByName(Window.Caption);
+                if (tabInfo == null)
+                {
+                    return;
+                }
             }
+
+            if (UnassignedTabsGroupSource.Contains(tabInfo))
+            {
+                UnassignedTabsGroupSource.Remove(tabInfo);
+                AllTabInfos.Remove(tabInfo);
+                //tabInfo.Filters.Add(ClosedFileGuid);
+            }
+
+            //if (!tabInfo.Filters.Any() || tabInfo.Filters.Contains(UnassignedTabsGroupGuid))
+            //{
+            //    UnassignedTabsGroupSource.Remove(tabInfo);
+            //    //tabInfo.Filters.Add(ClosedFileGuid);
+            //}
         }
 
         private void IntegrateNewTabIntoGroups(TabInfo tabToIntegrate)
@@ -213,57 +354,7 @@ namespace ProperTabGroups.Subsystem
             ThreadHelper.ThrowIfNotOnUIThread();
 
 
-            if (IsTabContainedInAnyGroup(tabToIntegrate))
-            {
-                return;
-            }
 
-            TabInfo potentialTabInfo = new TabInfo();
-            if (IsTabContainedInAnyGroupByName(tabToIntegrate, ref potentialTabInfo))
-            {
-                if (potentialTabInfo.Window?.Object == null)
-                {
-                    potentialTabInfo.Window = tabToIntegrate.Window;
-                }
-                if (!potentialTabInfo.Filters.Any())
-                {
-                    potentialTabInfo.Filters.Add(UnassignedTabsGroupGuid);
-                }
-                return;
-            }
-
-            // If there is no filters for the document then add it to the unassigned tabs group
-            if (!tabToIntegrate.Filters.Any())
-            {
-                //if (UnassignedTabsGroupSource.Contains(tabToIntegrate))
-                //{ 
-                //    return; 
-                //}
-
-                tabToIntegrate.Filters.Add(UnassignedTabsGroupGuid);
-
-                //if (!AllTabInfos.Contains(tabToIntegrate))
-                //{
-                //    AllTabInfos.Add(tabToIntegrate);
-                //}
-                return;
-            }
-
-            //// Determine the correct group for each tab based on its filters
-            //foreach (Guid filter in tabToIntegrate.Filters)
-            //{
-            //    // Collect all groups this tag should be in
-            //    IEnumerable<TabGroup> matchingGroups = GroupsDocumentWellSource.Where(g => g.GroupGuid == filter);
-
-            //    foreach (TabGroup group in matchingGroups)
-            //    {
-            //        // If the tag isn't already in the group then add it
-            //        if (!group.TabsInGroupSource.Contains(tabToIntegrate))
-            //        {
-            //            group.TabsInGroupSource.Add(tabToIntegrate);
-            //        }
-            //    }
-            //}
         }
 
         private static void RefreshUnassignedGroupsListView()
@@ -303,41 +394,42 @@ namespace ProperTabGroups.Subsystem
 
                 foreach (Guid filter in tab.Filters)
                 {
-                    if (groupLookup.TryGetValue(filter, out TabGroup group))
+                    if (!groupLookup.TryGetValue(filter, out TabGroup group)) continue;
+
+                    isUnassigned = false;
+
+                    // Initialize the hash set for this group if it doesn't exist
+                    if (!tabsToGroup.TryGetValue(group, out HashSet<TabInfo> tabs))
                     {
-                        isUnassigned = false;
-
-                        // Initialize the hash set for this group if it doesn't exist
-                        if (!tabsToGroup.TryGetValue(group, out HashSet<TabInfo> tabs))
-                        {
-                            tabs = new HashSet<TabInfo>();
-                            tabsToGroup[group] = tabs;
-                        }
-
-                        // Add tab to this group's set
-                        tabs.Add(tab);
+                        tabs = new HashSet<TabInfo>();
+                        tabsToGroup[group] = tabs;
                     }
+
+                    // Add tab to this group's set
+                    tabs.Add(tab);
                 }
 
                 // If no filters or no groups matched, add to unassigned
-                if (isUnassigned)
+                if (!isUnassigned && !tab.Filters.Contains(UnassignedTabsGroupGuid)) continue;
+
+                //// new code idk if this gets in the way or not
+                //if (!tab.Filters.Contains(UnassignedTabsGroupGuid))
+                //{
+                //    tab.Filters.Add(UnassignedTabsGroupGuid);
+                //}
+
+                if (!UnassignedTabsGroupSource.Contains(tab))
                 {
-                    if (!UnassignedTabsGroupSource.Contains(tab))
-                    {
-                        UnassignedTabsGroupSource.Add(tab);
-                    }
+                    UnassignedTabsGroupSource.Add(tab);
                 }
             }
 
             // Add tabs to their groups if they are not already there
             foreach (KeyValuePair<TabGroup, HashSet<TabInfo>> group in tabsToGroup)
             {
-                foreach (TabInfo tab in group.Value)
+                foreach (TabInfo tab in group.Value.Where(tab => !group.Key.TabsInGroupSource.Contains(tab)))
                 {
-                    if (!group.Key.TabsInGroupSource.Contains(tab))
-                    {
-                        group.Key.TabsInGroupSource.Add(tab);
-                    }
+                    group.Key.TabsInGroupSource.Add(tab);
                 }
             }
         }
@@ -361,15 +453,34 @@ namespace ProperTabGroups.Subsystem
                 if (!tab.Filters.Contains(UnassignedTabsGroupGuid))
                 {
                     UnassignedTabsGroupSource.RemoveAt(i);
+                    continue;
                 }
-                if (tab.Filters.Contains(ClosedFileGuid))
-                {
-                    AllTabInfos.Remove(tab);
-                }
+
+                if (!tab.Filters.Contains(ClosedFileGuid)) continue;
+                AllTabInfos.Remove(tab);
+                UnassignedTabsGroupSource.RemoveAt(i);
             }
             //IsUnassignedListBoxVisible = UnassignedTabsGroupSource.Any();
         }
-        private TabInfo GetTabByName(string inName)
+
+        private void AddUniqueTabToAllTabs(TabInfo tabInfo)
+        {
+            if (AllTabInfos.Contains(tabInfo))
+            {
+                Debug.WriteLine("ProperTabGroups ERROR: Tried adding an existing tab info to AllTabs");
+                return;
+            }
+
+            if (AllTabInfos.Any(currentTabInfo => currentTabInfo.WindowName == tabInfo.WindowName))
+            {
+                Debug.WriteLine("ProperTabGroups ERROR: Tried adding an existing tab name info to AllTabs");
+                return;
+            }
+
+            AllTabInfos.Add(tabInfo);
+        }
+
+        private TabInfo GetTabInfoByName(string inName)
         {
             return AllTabInfos.FirstOrDefault(x => x.WindowName == inName);
         }
@@ -399,6 +510,34 @@ namespace ProperTabGroups.Subsystem
                     outContainedTab = x;
                     return true;
                 }
+            }
+
+            foreach (TabInfo tabInfo in UnassignedTabsGroupSource)
+            {
+                if (tabInfo.WindowName != tabInfoToFind.WindowName) continue;
+                outContainedTab = tabInfo;
+                return true;
+            }
+
+            return false;
+        }
+        private bool IsTabContainedInAnyGroupByName(string tabInfoToFind, ref TabInfo outContainedTab)
+        {
+            foreach (TabGroup tabGroup in GroupsDocumentWellSource)
+            {
+                foreach (TabInfo x in tabGroup.TabsInGroupSource)
+                {
+                    if (x.WindowName != tabInfoToFind) continue;
+                    outContainedTab = x;
+                    return true;
+                }
+            }
+
+            foreach (TabInfo tabInfo in UnassignedTabsGroupSource)
+            {
+                if (tabInfo.WindowName != tabInfoToFind) continue;
+                outContainedTab = tabInfo;
+                return true;
             }
 
             return false;
@@ -448,6 +587,20 @@ namespace ProperTabGroups.Subsystem
             }
 
             return list;
+        }
+
+        public bool GetTabGroupFromGuid(Guid inGuid, ref TabGroup tabGroup)
+        {
+            foreach (TabGroup group in GroupsDocumentWellSource)
+            {
+                if (group.GroupGuid == inGuid)
+                {
+                    tabGroup = group;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public TabInfo GetTabInfoFromWindow(Window window)
@@ -551,10 +704,6 @@ namespace ProperTabGroups.Subsystem
                 // Open the file with a specific view kind if necessary. Here, using the default text view.
                 const string fileKind = Constants.vsViewKindCode; // This is typically for text files.
                 _dte.ItemOperations.OpenFile(filePath, fileKind);
-                //if (!selectedTabInfo.Filters.Any())
-                //{
-                //    selectedTabInfo.Filters.Add(UnassignedTabsGroupGuid);
-                //}
             }
             catch (Exception ex)
             {

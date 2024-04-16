@@ -76,6 +76,12 @@ namespace ProperTabGroups.TabGroupScripts
             DocumentWellManagementSubsystem.RefreshAllTabsView();
         }
     }
+    public enum TabState
+    {
+        Grouped,
+        Unassigned,
+        Invalid
+    }
 
     public class TabInfo : INotifyPropertyChanged
     {
@@ -126,6 +132,7 @@ namespace ProperTabGroups.TabGroupScripts
         public string DocumentPath { get; set; }
         // Property to hold the window's kind
         public string ViewKind { get; set; }
+        public TabState State { get; set; }
 
 
         public TabInfo()
