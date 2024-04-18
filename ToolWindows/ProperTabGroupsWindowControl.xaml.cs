@@ -25,6 +25,8 @@ namespace ProperTabGroups
 
         private TabInfo _filterModificationCurrentTabInfo = null;
 
+        private bool isSelectionHandling;
+
         public DocumentWellManagementSubsystem ViewModel => DocumentWellManagementSubsystem.Instance;
 
         public ProperTabGroupsWindowControl()
@@ -66,78 +68,90 @@ namespace ProperTabGroups
             // looking for ListView instances. If it finds one, it yields it. If it finds a container
             // (something that can have children), it recursively searches through its children.
 
-            if (parent != null)
+            if (parent == null) yield break;
+
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
             {
-                for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+
+                if (child is ListView view)
                 {
-                    DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                    yield return view;
+                }
 
-                    if (child != null && child is ListView)
-                    {
-                        yield return (ListView)child;
-                    }
-
-                    foreach (ListView childOfChild in GetAllListViews(child))
-                    {
-                        yield return childOfChild;
-                    }
+                foreach (ListView childOfChild in GetAllListViews(child))
+                {
+                    yield return childOfChild;
                 }
             }
         }
 
-        private void ListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (isSelectionHandling) return;
 
-            // Handles all selection changed directly from the ListViews
-            HandleClearingAllOtherSelectedItemsListViewOnly(sender);
-
-            ThreadHelper.ThrowIfNotOnUIThread();
-            // Check if the selection change is programmatic and ignore it if so
-            if (_bIsSelectionChangeProgrammatic)
+            isSelectionHandling = true;
+            try
             {
-                return;
+
+                // Handles all selection changed directly from the ListViews
+                HandleClearingAllOtherSelectedItemsListViewOnly(sender);
+
+                ThreadHelper.ThrowIfNotOnUIThread();
+                // Check if the selection change is programmatic and ignore it if so
+                if (_bIsSelectionChangeProgrammatic)
+                {
+                    return;
+                }
+
+                ListView localListView = sender as ListView;
+
+                if (localListView?.SelectedItem is not TabInfo selectedTabInfo) return; // Safety check
+
+                if (selectedTabInfo.Window != null && selectedTabInfo.Window == _dte.ActiveWindow)
+                {
+                    return;
+                }
+
+                ViewModel.OpenFileSafely(selectedTabInfo);
+
+                // Old Show File, only reason im keeping this here is because I think this also worked for opening files
+                //_dte.ExecuteCommand("File.OpenFile", selectedTabInfo.DocumentPath);
             }
-            ListView localListView = sender as ListView;
-            if (localListView == null) return; // Safety check
-
-            TabInfo selectedTabInfo = localListView.SelectedItem as TabInfo;
-            if (selectedTabInfo == null) return; // Safety check
-
-            ViewModel.OpenFileSafely(selectedTabInfo);
-
-            // Show File
-            //_dte.ExecuteCommand("File.OpenFile", selectedTabInfo.DocumentPath);
+            finally
+            {
+                isSelectionHandling = false;
+            }
         }
 
         private void HandleClearingAllOtherSelectedItemsListViewOnly(object sender)
         {
-            foreach (ListView currentListView in GetAllListViews(this))
+            TabInfo selectedTabInfo = GetClickedTabInfo(sender);
+            if (selectedTabInfo == null) return;
+
+            //foreach (ListView currentListView in GetAllListViews(this))
+            //{
+            //    if (currentListView == sender) continue; // Check to avoid clearing the selection of the current ListView
+
+            //    foreach (object item in currentListView.Items)
+            //    {
+            //        // we dont care about anything that isnt a tab info
+            //        if (item is not TabInfo currentTabInfo) continue;
+
+            //        if (!(currentTabInfo?.Window == null || currentTabInfo.Window.Object == null ) && currentTabInfo.Window.Visible || currentTabInfo == selectedTabInfo)
+            //        {
+            //            continue;
+            //        }
+
+            //        currentTabInfo.IsSelected = false;
+
+            //    }
+            //}
+
+            foreach (TabInfo tabInfo in ViewModel.AllTabInfos.Where(tabInfo => tabInfo != selectedTabInfo))
             {
-                //if (currentListView == sender) continue; // Check to avoid clearing the selection of the current ListView
-
-                foreach (object item in currentListView.Items)
-                {
-                    TabGroup currentTabGroup = item as TabGroup;
-
-                    // we dont care about tab groups so if this can successfully cast to a tab group then we continue;
-                    if (currentTabGroup != null) continue;
-
-                    TabInfo currentTabInfo = item as TabInfo;
-
-                    if (!(currentTabInfo?.Window == null || currentTabInfo.Window.Object == null ) && currentTabInfo.Window.Visible)
-                    {
-                        continue;
-                    }
-
-                    currentTabInfo.IsSelected = false;
-
-                }
+                tabInfo.IsSelected = false;
             }
-        }
-
-        private void ListViewItem_Selected(object sender, System.Windows.RoutedEventArgs e)
-        {
-
         }
 
         private void ClearSelection()

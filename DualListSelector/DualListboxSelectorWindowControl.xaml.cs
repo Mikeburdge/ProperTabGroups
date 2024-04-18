@@ -46,11 +46,6 @@ namespace ProperTabGroups.DualListSelector
             
             foreach (TabGroup tabGroup in tabGroups.OrderBy(group => group.Name))
             {
-                if (tabGroup.GroupGuid == DocumentWellManagementSubsystem.UnassignedTabsGroupGuid)
-                {
-                    continue;
-                }
-                
                 if (inTabInfo.Filters.Contains(tabGroup.GroupGuid))
                 {
                     RightItems.Add(tabGroup);

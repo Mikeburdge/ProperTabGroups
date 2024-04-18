@@ -4,15 +4,26 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Data;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
-using EnvDTE;
 using ProperTabGroups.Subsystem;
+using Window = EnvDTE.Window;
 
 namespace ProperTabGroups.TabGroupScripts
 {
     public class TabGroup : INotifyPropertyChanged
     {
+        //////////////////////////////////////////
+        // Debounce Variables
+        //////////////////////////////////////////
+
+        private DispatcherTimer debounceTimer = new DispatcherTimer();
+
+        //////////////////////////////////////////
+        // Tabs In Group Section
+        //////////////////////////////////////////
         private ObservableCollection<TabInfo> _tabsInGroupSource;
 
         public ObservableCollection<TabInfo> TabsInGroupSource
@@ -41,7 +52,11 @@ namespace ProperTabGroups.TabGroupScripts
         }
 
         public CollectionViewSource TabsInGroup { get; set; }
-        // Used for filter matching
+
+
+        //////////////////////////////////////////
+        // Tab Group Public Variables
+        //////////////////////////////////////////
         public string Name { get; set; }
         public Guid GroupGuid { get; set; }
         public bool BIsLocked { get; set; }
@@ -49,6 +64,9 @@ namespace ProperTabGroups.TabGroupScripts
         public string ColourCode { get; set; }
         public int ItemCount => TabsInGroupSource.Count;
 
+        //////////////////////////////////////////
+        // Constructor
+        //////////////////////////////////////////
         public TabGroup(string name, bool bIsLocked = false, bool bIsVisible = true, Guid inGuid = default)
         {
             Name = name;
@@ -63,6 +81,16 @@ namespace ProperTabGroups.TabGroupScripts
             };
 
             TabsInGroup.SortDescriptions.Add(new SortDescription(nameof(TabInfo.WindowName), ListSortDirection.Ascending));
+
+            //////////////////////////////////////////
+            // Debounce Timer Implementation
+            //////////////////////////////////////////
+            debounceTimer.Interval = TimeSpan.FromMilliseconds(100); // Possibly needs adjusting.
+            debounceTimer.Tick += (s, e) =>
+            {
+                debounceTimer.Stop();
+                RefreshUI();
+            };
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -72,10 +100,21 @@ namespace ProperTabGroups.TabGroupScripts
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
         private void TabsInGroupSource_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {   
+            // Restart the timer on each collection change
+            debounceTimer.Stop();
+            debounceTimer.Start();
+        }
+        private void RefreshUI()
         {
-            DocumentWellManagementSubsystem.RefreshAllTabsView();
+            Application.Current.Dispatcher.BeginInvoke(new Action(() => 
+            {
+                // Code to update the UI safely
+                DocumentWellManagementSubsystem.RefreshAllTabsView();
+            }), DispatcherPriority.Background);
         }
     }
+
     public enum TabState
     {
         Grouped,
@@ -127,10 +166,18 @@ namespace ProperTabGroups.TabGroupScripts
             }
         }
 
-        // Property to hold the window's name
+        //////////////////////////////////////////
+        // Debounce Variables
+        //////////////////////////////////////////
+
+        private DispatcherTimer debounceTimer = new DispatcherTimer();
+
+        //////////////////////////////////////////
+        // Public Tab Info Variables
+        //////////////////////////////////////////
+        /// 
         public string WindowName { get; set; }
         public string DocumentPath { get; set; }
-        // Property to hold the window's kind
         public string ViewKind { get; set; }
         public TabState State { get; set; }
 
@@ -150,6 +197,22 @@ namespace ProperTabGroups.TabGroupScripts
             }
             DocumentPath = window.Document.FullName;
             ViewKind = window.Kind;
+            State = TabState.Invalid;
+
+            //////////////////////////////////////////
+            // Debounce Timer Implementation
+            //////////////////////////////////////////
+            debounceTimer.Interval = TimeSpan.FromMilliseconds(100); // Possibly needs adjusting.
+            debounceTimer.Tick += (s, e) =>
+            {
+                debounceTimer.Stop();
+                RealignTabs();
+            };
+        }
+
+        private void RealignTabs()
+        {
+            DocumentWellManagementSubsystem.Instance.RealignTabsToFilteredGroups();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -169,10 +232,9 @@ namespace ProperTabGroups.TabGroupScripts
 
         private void Filters_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            // Currently calling the same thing as all we need to do is refresh but this has functionality for later in case we need to do more.
-            DocumentWellManagementSubsystem.Instance.RealignTabsToFilteredGroups();
+            debounceTimer.Stop();
+            debounceTimer.Start();
         }
-
     }
 
     public class SerializableTabGroup

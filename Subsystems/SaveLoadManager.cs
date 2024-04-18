@@ -56,13 +56,10 @@ namespace ProperTabGroups.Subsystems
 
         public void SaveTabGroups()
         {
-            List<TabGroup> tabGroups = DocumentWellManagementSubsystem.Instance.GroupsDocumentWellSource.ToList();
-
-            tabGroups.RemoveAll(x => x.GroupGuid == DocumentWellManagementSubsystem.UnassignedTabsGroupGuid);
-            SaveTabGroups(tabGroups);
+            SaveTabGroups(DocumentWellManagementSubsystem.Instance.GroupsDocumentWellSource);
         }
 
-        private void SaveTabGroups(IReadOnlyCollection<TabGroup> tabGroups)
+        private void SaveTabGroups(IEnumerable<TabGroup> tabGroups)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             try
