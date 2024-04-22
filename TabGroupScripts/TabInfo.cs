@@ -125,19 +125,7 @@ namespace ProperTabGroups.TabGroupScripts
     public class TabInfo : INotifyPropertyChanged
     {
         // todo: probably for the best to create a non-persistent guid. one that is given at the start of the session and used to identify tabd within sessions. MAYBE
-        private bool _isSelected;
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set
-            {
-                if (_isSelected != value)
-                {
-                    _isSelected = value;
-                    OnPropertyChanged(); // Notify the UI of the change
-                }
-            }
-        }
+       
         public Window Window { get; set; }
 
         private ObservableCollection<Guid> _filters;
@@ -246,13 +234,12 @@ namespace ProperTabGroups.TabGroupScripts
         public string ColourCode { get; set; }
         public List<SerializableTabInfo> Tabs { get; set; } = new List<SerializableTabInfo>();
     }
+
     public class SerializableTabInfo
     {
-        public bool IsSelected { get; set; }
         public string WindowName { get; set; }
         public string DocumentPath { get; set; }
         public string ViewKind { get; set; }
         public List<Guid> Filters { get; set; } = new List<Guid>();
     }
-
 }

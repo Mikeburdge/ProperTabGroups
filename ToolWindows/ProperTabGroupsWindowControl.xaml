@@ -150,7 +150,7 @@
             <!--<Setter Property="BorderBrush" Value="Aqua"/>-->
 
             <!-- Style to select the tab when we want it selected -->
-            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+            <!--<Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />-->
 
             <!-- Style stretch the clickable content to the width of the window-->
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />

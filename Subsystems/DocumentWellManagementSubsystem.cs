@@ -166,7 +166,11 @@ namespace ProperTabGroups.Subsystem
             // Repopulate groups from the loaded state
             foreach (TabGroup tabGroup in tabGroups)
             {
-                AllTabInfos.AddRange(tabGroup.TabsInGroupSource);
+                // Add UNIQUE tab infos to all tabs to stop duplication
+                foreach (TabInfo tabInfo in tabGroup.TabsInGroupSource)
+                {
+                    AddUniqueTabToAllTabs(tabInfo);
+                }
                 GroupsDocumentWellSource.Add(tabGroup);
             }
 
@@ -179,15 +183,14 @@ namespace ProperTabGroups.Subsystem
                 {
                     // If no TabInfo exists, create a new one
                     TabInfo newTabInfo = CreateNewTabInfo(window);
-                    AllTabInfos.Add(newTabInfo);
+                    AddUniqueTabToAllTabs(newTabInfo);
                 }
                 else
                 {
                     currentTabInfo.Window = window;
-                    currentTabInfo.WindowName = window.Caption;
+                    //currentTabInfo.WindowName = window.Caption; // Unnecessary
                     currentTabInfo.State = TabState.Grouped;
-                    currentTabInfo.DocumentPath = window.Document.FullName;
-                    //currentTabInfo.IsSelected // could set this to be defaulted to off maybe??
+                    //currentTabInfo.DocumentPath = window.Document.FullName; // Unnecessary
                 }
             }
 
@@ -204,8 +207,6 @@ namespace ProperTabGroups.Subsystem
         {
             return new TabInfo(window, []);
         }
-
-
 
         private bool ShouldTabBeGrouped(TabInfo tabInfo, TabGroup group)
         {
@@ -259,11 +260,9 @@ namespace ProperTabGroups.Subsystem
                     throw new ArgumentOutOfRangeException();
             }
 
-            if (!AllTabInfos.Contains(tabInfo))
-            {
-                AllTabInfos.Add(tabInfo);
-            }
-            //RealignTabsToFilteredGroups();
+            //AddUniqueTabToAllTabs(tabInfo);
+
+            RealignTabsToFilteredGroups();
         }
 
         private void HandleInGroup(TabInfo tabInfo, Window newWindow)
@@ -289,6 +288,7 @@ namespace ProperTabGroups.Subsystem
                 tabInfo.State = TabState.Unassigned;
                 return;
             }
+            //AddUniqueTabToAllTabs(tabInfo);
 
             //if (!tabInfo.Filters.Any())
             //{
@@ -465,170 +465,170 @@ namespace ProperTabGroups.Subsystem
             }
         }
 
-        //public void RealignTabsToFilteredGroups()
-        //{
-        //    ThreadHelper.ThrowIfNotOnUIThread();
-
-        //    // Dictionary for quick lookup of groups by their Guid
-        //    Dictionary<Guid, TabGroup> groupLookup = GroupsDocumentWellSource.ToDictionary(g => g.GroupGuid);
-
-        //    // HashSet for performance while checking if tab belongs to any group
-        //    HashSet<Guid> allGroupFilters = new(groupLookup.Keys);
-
-        //    // Separate lists to collect changes that will be applied to the UI-bound collections
-        //    Dictionary<TabGroup, List<TabInfo>> tabsToRemoveFromGroups = new();
-        //    List<TabInfo> tabsToAddToUnassigned = [];
-
-        //    // Iterate through all TabInfos to align them according to their filters
-        //    foreach (TabInfo tabInfo in AllTabInfos)
-        //    {
-        //        // If TabInfo filters intersect with any group filters, it belongs to that group
-        //        List<Guid> tabGroupFilters = tabInfo.Filters.Intersect(allGroupFilters).ToList();
-        //        bool belongsToGroup = tabGroupFilters.Any();
-
-        //        if (!belongsToGroup)
-        //        {
-        //            // If the tab belongs to no group and is not in unassigned, add to unassigned
-        //            tabsToAddToUnassigned.Add(tabInfo);
-        //        }
-        //        else
-        //        {
-        //            // Prepare to remove the tab from any groups it no longer belongs to
-        //            foreach (TabGroup group in GroupsDocumentWellSource)
-        //            {
-        //                if (!tabGroupFilters.Contains(group.GroupGuid) && group.TabsInGroupSource.Contains(tabInfo))
-        //                {
-        //                    if (!tabsToRemoveFromGroups.ContainsKey(group))
-        //                    {
-        //                        tabsToRemoveFromGroups[group] = new List<TabInfo>();
-        //                    }
-
-        //                    tabsToRemoveFromGroups[group].Add(tabInfo);
-        //                }
-        //                else if (tabGroupFilters.Contains(group.GroupGuid) && !group.TabsInGroupSource.Contains(tabInfo))
-        //                {
-        //                    // If the tab belongs to a group and isn't already in it, add it
-        //                    group.TabsInGroupSource.Add(tabInfo);
-        //                    // And if its contained in the unassigned tab groups then remove it.
-        //                    if (UnassignedTabsGroupSource.Contains(tabInfo))
-        //                    {
-        //                        UnassignedTabsGroupSource.Remove(tabInfo);
-        //                    }
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //    // Apply collected changes to UI-bound collections
-        //    foreach (TabGroup group in tabsToRemoveFromGroups.Keys)
-        //    {
-        //        foreach (TabInfo tabInfo in tabsToRemoveFromGroups[group])
-        //        {
-        //            group.TabsInGroupSource.Remove(tabInfo);
-        //        }
-        //    }
-
-        //    foreach (TabInfo tabInfo in tabsToAddToUnassigned)
-        //    {
-        //        if (!UnassignedTabsGroupSource.Contains(tabInfo))
-        //        {
-        //            UnassignedTabsGroupSource.Add(tabInfo);
-        //        }
-        //    }
-
-        //    // Finally, remove any tab that is closed (belongs to ClosedFileGuid)
-        //    AllTabInfos.RemoveAll(tab => tab.Filters.Contains(ClosedFileGuid));
-
-        //    for (int index = UnassignedTabsGroupSource.Count - 1; index >= 0; index--)
-        //    {
-        //        TabInfo tabInfo = UnassignedTabsGroupSource[index];
-        //        if (tabInfo.Filters.Contains(ClosedFileGuid))
-        //        {
-        //            UnassignedTabsGroupSource.RemoveAt(index);
-        //        }
-        //    }
-        //}
-        
         public void RealignTabsToFilteredGroups()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            // Clean Current Tab Groups. (remove tabs from groups they dont have the correct filter for)
+            // Dictionary for quick lookup of groups by their Guid
+            Dictionary<Guid, TabGroup> groupLookup = GroupsDocumentWellSource.ToDictionary(g => g.GroupGuid);
+
+            // HashSet for performance while checking if tab belongs to any group
+            HashSet<Guid> allGroupFilters = new(groupLookup.Keys);
+
+            // Separate lists to collect changes that will be applied to the UI-bound collections
+            Dictionary<TabGroup, List<TabInfo>> tabsToRemoveFromGroups = new();
+            List<TabInfo> tabsToAddToUnassigned = [];
+
+            // Iterate through all TabInfos to align them according to their filters
+            foreach (TabInfo tabInfo in AllTabInfos)
             {
-                foreach (TabGroup tabGroup in GroupsDocumentWellSource)
+                // If TabInfo filters intersect with any group filters, it belongs to that group
+                List<Guid> tabGroupFilters = tabInfo.Filters.Intersect(allGroupFilters).ToList();
+                bool belongsToGroup = tabGroupFilters.Any();
+
+                if (!belongsToGroup)
                 {
-                    for (int i = tabGroup.TabsInGroupSource.Count - 1; i >= 0; i--)
+                    // If the tab belongs to no group and is not in unassigned, add to unassigned
+                    tabsToAddToUnassigned.Add(tabInfo);
+                }
+                else
+                {
+                    // Prepare to remove the tab from any groups it no longer belongs to
+                    foreach (TabGroup group in GroupsDocumentWellSource)
                     {
-                        TabInfo tabInfo = tabGroup.TabsInGroupSource[i];
-                        if (!tabInfo.Filters.Contains(tabGroup.GroupGuid))
+                        if (!tabGroupFilters.Contains(group.GroupGuid) && group.TabsInGroupSource.Contains(tabInfo))
                         {
-                            tabGroup.TabsInGroupSource.RemoveAt(i);
+                            if (!tabsToRemoveFromGroups.ContainsKey(group))
+                            {
+                                tabsToRemoveFromGroups[group] = new List<TabInfo>();
+                            }
+
+                            tabsToRemoveFromGroups[group].Add(tabInfo);
+                        }
+                        else if (tabGroupFilters.Contains(group.GroupGuid) && !group.TabsInGroupSource.Contains(tabInfo))
+                        {
+                            // If the tab belongs to a group and isn't already in it, add it
+                            group.TabsInGroupSource.Add(tabInfo);
+                            // And if its contained in the unassigned tab groups then remove it.
+                            if (UnassignedTabsGroupSource.Contains(tabInfo))
+                            {
+                                UnassignedTabsGroupSource.Remove(tabInfo);
+                            }
                         }
                     }
                 }
-
-                for (int i = UnassignedTabsGroupSource.Count - 1; i >= 0; i--)
-                {
-                    TabInfo tab = UnassignedTabsGroupSource[i];
-                    if (!tab.Filters.Contains(UnassignedTabsGroupGuid))
-                    {
-                        UnassignedTabsGroupSource.RemoveAt(i);
-                        continue;
-                    }
-
-                    if (!tab.Filters.Contains(ClosedFileGuid)) continue;
-                    AllTabInfos.Remove(tab);
-                    UnassignedTabsGroupSource.RemoveAt(i);
-                }
-                //IsUnassignedListBoxVisible = UnassignedTabsGroupSource.Any();
             }
 
-
-            // Create a dictionary for quick lookup
-            Dictionary<Guid, TabGroup> groupLookup = GroupsDocumentWellSource.ToDictionary(g => g.GroupGuid, g => g);
-
-            // Preprocess all tabs and organize them by required groups
-            Dictionary<TabGroup, HashSet<TabInfo>> tabsToGroup = new Dictionary<TabGroup, HashSet<TabInfo>>();
-
-            foreach (TabInfo tab in AllTabInfos)
+            // Apply collected changes to UI-bound collections
+            foreach (TabGroup group in tabsToRemoveFromGroups.Keys)
             {
-                bool isUnassigned = true;
-
-                foreach (Guid filter in tab.Filters)
+                foreach (TabInfo tabInfo in tabsToRemoveFromGroups[group])
                 {
-                    if (!groupLookup.TryGetValue(filter, out TabGroup group)) continue;
-
-                    isUnassigned = false;
-
-                    // Initialize the hash set for this group if it doesn't exist
-                    if (!tabsToGroup.TryGetValue(group, out HashSet<TabInfo> tabs))
-                    {
-                        tabs = new HashSet<TabInfo>();
-                        tabsToGroup[group] = tabs;
-                    }
-
-                    // Add tab to this group's set
-                    tabs.Add(tab);
-                }
-
-                // If no filters or no groups matched, add to unassigned
-                if (!isUnassigned && !tab.Filters.Contains(UnassignedTabsGroupGuid)) continue;
-
-                if (!UnassignedTabsGroupSource.Contains(tab))
-                {
-                    UnassignedTabsGroupSource.Add(tab);
+                    group.TabsInGroupSource.Remove(tabInfo);
                 }
             }
 
-            // Add tabs to their groups if they are not already there
-            foreach (KeyValuePair<TabGroup, HashSet<TabInfo>> group in tabsToGroup)
+            foreach (TabInfo tabInfo in tabsToAddToUnassigned)
             {
-                foreach (TabInfo tab in group.Value.Where(tab => !group.Key.TabsInGroupSource.Contains(tab)))
+                if (!UnassignedTabsGroupSource.Contains(tabInfo))
                 {
-                    group.Key.TabsInGroupSource.Add(tab);
+                    UnassignedTabsGroupSource.Add(tabInfo);
+                }
+            }
+
+            // Finally, remove any tab that is closed (belongs to ClosedFileGuid)
+            AllTabInfos.RemoveAll(tab => tab.Filters.Contains(ClosedFileGuid));
+
+            for (int index = UnassignedTabsGroupSource.Count - 1; index >= 0; index--)
+            {
+                TabInfo tabInfo = UnassignedTabsGroupSource[index];
+                if (tabInfo.Filters.Contains(ClosedFileGuid))
+                {
+                    UnassignedTabsGroupSource.RemoveAt(index);
                 }
             }
         }
+
+        //public void RealignTabsToFilteredGroups()
+        //{
+        //    ThreadHelper.ThrowIfNotOnUIThread();
+
+        //    // Clean Current Tab Groups. (remove tabs from groups they dont have the correct filter for)
+        //    {
+        //        foreach (TabGroup tabGroup in GroupsDocumentWellSource)
+        //        {
+        //            for (int i = tabGroup.TabsInGroupSource.Count - 1; i >= 0; i--)
+        //            {
+        //                TabInfo tabInfo = tabGroup.TabsInGroupSource[i];
+        //                if (!tabInfo.Filters.Contains(tabGroup.GroupGuid))
+        //                {
+        //                    tabGroup.TabsInGroupSource.RemoveAt(i);
+        //                }
+        //            }
+        //        }
+
+        //        for (int i = UnassignedTabsGroupSource.Count - 1; i >= 0; i--)
+        //        {
+        //            TabInfo tab = UnassignedTabsGroupSource[i];
+        //            if (!tab.Filters.Contains(UnassignedTabsGroupGuid))
+        //            {
+        //                UnassignedTabsGroupSource.RemoveAt(i);
+        //                continue;
+        //            }
+
+        //            if (!tab.Filters.Contains(ClosedFileGuid)) continue;
+        //            AllTabInfos.Remove(tab);
+        //            UnassignedTabsGroupSource.RemoveAt(i);
+        //        }
+        //        //IsUnassignedListBoxVisible = UnassignedTabsGroupSource.Any();
+        //    }
+
+
+        //    // Create a dictionary for quick lookup
+        //    Dictionary<Guid, TabGroup> groupLookup = GroupsDocumentWellSource.ToDictionary(g => g.GroupGuid, g => g);
+
+        //    // Preprocess all tabs and organize them by required groups
+        //    Dictionary<TabGroup, HashSet<TabInfo>> tabsToGroup = new Dictionary<TabGroup, HashSet<TabInfo>>();
+
+        //    foreach (TabInfo tab in AllTabInfos)
+        //    {
+        //        bool isUnassigned = true;
+
+        //        foreach (Guid filter in tab.Filters)
+        //        {
+        //            if (!groupLookup.TryGetValue(filter, out TabGroup group)) continue;
+
+        //            isUnassigned = false;
+
+        //            // Initialize the hash set for this group if it doesn't exist
+        //            if (!tabsToGroup.TryGetValue(group, out HashSet<TabInfo> tabs))
+        //            {
+        //                tabs = new HashSet<TabInfo>();
+        //                tabsToGroup[group] = tabs;
+        //            }
+
+        //            // Add tab to this group's set
+        //            tabs.Add(tab);
+        //        }
+
+        //        // If no filters or no groups matched, add to unassigned
+        //        if (!isUnassigned && !tab.Filters.Contains(UnassignedTabsGroupGuid)) continue;
+
+        //        if (!UnassignedTabsGroupSource.Contains(tab))
+        //        {
+        //            UnassignedTabsGroupSource.Add(tab);
+        //        }
+        //    }
+
+        //    // Add tabs to their groups if they are not already there
+        //    foreach (KeyValuePair<TabGroup, HashSet<TabInfo>> group in tabsToGroup)
+        //    {
+        //        foreach (TabInfo tab in group.Value.Where(tab => !group.Key.TabsInGroupSource.Contains(tab)))
+        //        {
+        //            group.Key.TabsInGroupSource.Add(tab);
+        //        }
+        //    }
+        //}
 
         private void AddUniqueTabToAllTabs(TabInfo tabInfo)
         {
@@ -833,16 +833,6 @@ namespace ProperTabGroups.Subsystem
             field = value;
             OnPropertyChanged(propertyName);
             return true;
-        }
-        public TabInfo GetFirstSelectedTabInfoInGroups()
-        {
-            foreach (TabGroup tabGroup in GroupsDocumentWellSource)
-            {
-                TabInfo selectedTab = tabGroup.TabsInGroupSource.FirstOrDefault(tab => tab.IsSelected);
-                if (selectedTab != null) return selectedTab;
-            }
-
-            return null;
         }
 
         public void OpenFileSafely(TabInfo selectedTabInfo)
