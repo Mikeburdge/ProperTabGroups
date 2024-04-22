@@ -105,7 +105,7 @@ namespace ProperTabGroups.TabGroupScripts
             debounceTimer.Stop();
             debounceTimer.Start();
         }
-        private void RefreshUI()
+        private static void RefreshUI()
         {
             Application.Current.Dispatcher.BeginInvoke(new Action(() => 
             {

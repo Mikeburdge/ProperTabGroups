@@ -252,11 +252,11 @@
         <!--_______________________________________________-->
         <!--___________Unassigned Tabs List View___________-->
         <!--_______________________________________________-->
+        <!--Visibility="{Binding IsUnassignedListBoxVisible, Converter={StaticResource BoolToVis}}"-->
         <ListView x:Name="UnassignedTabsListView" 
                   Margin="0,0,0,0" 
                   d:ItemsSource="{d:SampleData ItemCount=2}" 
                   ItemsSource="{Binding UnassignedTabsGroup.View}" 
-                  Visibility="{Binding IsUnassignedListBoxVisible, Converter={StaticResource BoolToVis}}"
                   ItemContainerStyle="{StaticResource TabInfoListViewStyle}"
                   SelectionChanged="ListView_SelectionChanged" 
                   MouseDoubleClick="ModifyFilters_OnClick">

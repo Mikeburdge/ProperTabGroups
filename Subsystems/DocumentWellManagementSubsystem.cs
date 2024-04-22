@@ -192,7 +192,7 @@ namespace ProperTabGroups.Subsystem
             }
 
             // After initializing all tabs, realign them to their respective filtered groups
-            //RealignTabsToFilteredGroups();
+            RealignTabsToFilteredGroups();
 
             // Subscribe to window creation and closing events to manage tabs dynamically
             _dte.Events.WindowEvents.WindowCreated += WindowCreated;
