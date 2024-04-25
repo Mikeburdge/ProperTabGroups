@@ -115,7 +115,7 @@ namespace ProperTabGroups.DualListSelector
 
             foreach (TabGroup rightItem in RightItems)
             {
-                DocumentWellManagementSubsystem.AddFilterToTab(currentTabInfo, rightItem.GroupGuid);
+                ViewModel.AddFilterToTab(currentTabInfo, rightItem.GroupGuid);
             }
         }
     }

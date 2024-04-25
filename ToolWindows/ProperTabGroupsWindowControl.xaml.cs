@@ -93,7 +93,6 @@ namespace ProperTabGroups
             isSelectionHandling = true;
             try
             {
-
                 // Handles all selection changed directly from the ListViews
                 HandleClearingAllOtherSelectedItemsListViewOnly(sender);
 
@@ -129,35 +128,44 @@ namespace ProperTabGroups
             TabInfo selectedTabInfo = GetClickedTabInfo(sender);
             if (selectedTabInfo == null) return;
 
-            IEnumerable<ListView> allListViews = GetAllListViews(this);
-
-            // Loop through each ListView
-            foreach (ListView currentListView in allListViews)
+            foreach (TabInfo tabInfo in ViewModel.AllTabInfos)
             {
-                // Skip the ListView that initiated the call to prevent altering its state
-                if (currentListView == sender as ListView) continue;
+                bool shouldTabBeSelected = tabInfo.Equals(selectedTabInfo);
 
-                foreach (object item in currentListView.Items)
-                {
-                    // Skip items that are not of type TabInfo
-                    if (item is not TabInfo currentTabInfo) continue;
-
-                    // Conditions to skip the deselection:
-                    // 1. The TabInfo corresponds to a visible, non-null window object.
-                    // 2. The TabInfo is the one that was selected.
-                    if (/*currentTabInfo.Window is { Object: not null, Visible: true } ||*/ currentTabInfo == selectedTabInfo)
-                    {
-                        continue;
-                    }
-
-                    // Retrieve the ListViewItem corresponding to the currentTabInfo
-                    if (currentListView.ItemContainerGenerator.ContainerFromItem(currentTabInfo) is ListViewItem listViewItem)
-                    {
-                        // Deselect the ListViewItem
-                        listViewItem.IsSelected = false;
-                    }
-                }
+                SetIfTabIsSelected(tabInfo, shouldTabBeSelected);
             }
+
+            //IEnumerable<ListView> allListViews = GetAllListViews(this);
+
+            //// Loop through each ListView
+            //foreach (ListView currentListView in allListViews)
+            //{
+            //    // Skip the ListView that initiated the call to prevent altering its state
+            //    if (currentListView == sender as ListView) continue;
+
+            //    foreach (object item in currentListView.Items)
+            //    {
+            //        // Skip items that are not of type TabInfo
+            //        if (item is not TabInfo currentTabInfo) continue;
+
+            //        // Conditions to skip the deselection:
+            //        // 1. The TabInfo corresponds to a visible, non-null window object.
+            //        // 2. The TabInfo is the one that was selected.
+            //        if (/*currentTabInfo.Window is { Object: not null, Visible: true } ||*/ false)
+            //        {
+            //            continue;
+            //        }
+
+            //        bool shouldTabBeSelected = currentTabInfo == selectedTabInfo;
+
+            //        // Retrieve the ListViewItem corresponding to the currentTabInfo
+            //        if (currentListView.ItemContainerGenerator.ContainerFromItem(currentTabInfo) is ListViewItem listViewItem)
+            //        {
+            //            // Deselect the ListViewItem
+            //            listViewItem.IsSelected = shouldTabBeSelected;
+            //        }
+            //    }
+            //}
         }
 
         private void SetIfTabIsSelected(TabInfo tabToModify, bool shouldBeSelected)
@@ -317,5 +325,9 @@ namespace ProperTabGroups
             // Rest of your method...
         }
 
+        private void RefreshAll(object sender, RoutedEventArgs e)
+        {
+            DocumentWellManagementSubsystem.RefreshAll();
+        }
     }
 }
