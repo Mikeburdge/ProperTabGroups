@@ -128,12 +128,7 @@ namespace ProperTabGroups
             TabInfo selectedTabInfo = GetClickedTabInfo(sender);
             if (selectedTabInfo == null) return;
 
-            foreach (TabInfo tabInfo in ViewModel.AllTabInfos)
-            {
-                bool shouldTabBeSelected = tabInfo.Equals(selectedTabInfo);
-
-                SetIfTabIsSelected(tabInfo, shouldTabBeSelected);
-            }
+            DeselectAllTabsExceptOne(selectedTabInfo);
 
             //IEnumerable<ListView> allListViews = GetAllListViews(this);
 
@@ -166,6 +161,16 @@ namespace ProperTabGroups
             //        }
             //    }
             //}
+        }
+
+        private void DeselectAllTabsExceptOne(TabInfo tabToModify)
+        {
+            foreach (TabInfo tabInfo in ViewModel.AllTabInfos)
+            {
+                bool shouldTabBeSelected = tabInfo.Equals(tabToModify);
+
+                SetIfTabIsSelected(tabInfo, shouldTabBeSelected);
+            }
         }
 
         private void SetIfTabIsSelected(TabInfo tabToModify, bool shouldBeSelected)

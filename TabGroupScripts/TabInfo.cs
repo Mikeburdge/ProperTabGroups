@@ -139,8 +139,6 @@ namespace ProperTabGroups.TabGroupScripts
         public string WindowName { get; set; }
         public string DocumentPath { get; set; }
         public string ViewKind { get; set; }
-        public TabState State { get; set; }
-
 
         public TabInfo()
         {
@@ -154,7 +152,6 @@ namespace ProperTabGroups.TabGroupScripts
             WindowName = window.Caption;
             DocumentPath = window.Document.FullName;
             ViewKind = window.Kind;
-            State = TabState.Invalid;
 
         }
 
@@ -183,13 +180,23 @@ namespace ProperTabGroups.TabGroupScripts
             return obj is TabInfo info &&
                    WindowName == info.WindowName &&
                    DocumentPath == info.DocumentPath &&
-                   ViewKind == info.ViewKind &&
-                   State == info.State;
+                   ViewKind == info.ViewKind;
+        }
+
+        public static bool operator ==(TabInfo left, TabInfo right)
+        {
+            // Handle null on either side.
+            return ReferenceEquals(left, null) ? ReferenceEquals(right, null) : left.Equals(right);
+        }
+
+        public static bool operator !=(TabInfo left, TabInfo right)
+        {
+            return !(left == right);
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(WindowName, DocumentPath, ViewKind, State);
+            return HashCode.Combine(WindowName, DocumentPath, ViewKind);
         }
     }
 

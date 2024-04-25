@@ -181,24 +181,18 @@ namespace ProperTabGroups.Subsystem
             {
                 TabInfo currentTabInfo = GetTabInfoFromWindow(window);
                 // Check if there is already a TabInfo for this window
+                if (currentTabInfo != null) continue;
+
+                currentTabInfo = GetTabInfoByName(window.Caption);
                 if (currentTabInfo == null)
                 {
-                    currentTabInfo = GetTabInfoByName(window.Caption);
-                    if (currentTabInfo == null)
-                    {
-                        // If no TabInfo exists, create a new one
-                        TabInfo newTabInfo = CreateNewTabInfo(window);
-                        AddUniqueTabToAllTabs(newTabInfo);
-                    }
-                    else
-                    {
-                        currentTabInfo.Window = window;
-                        currentTabInfo.State = TabState.Grouped;
-                    }
+                    // If no TabInfo exists, create a new one
+                    TabInfo newTabInfo = CreateNewTabInfo(window);
+                    AddUniqueTabToAllTabs(newTabInfo);
                 }
                 else
                 {
-                    currentTabInfo.State = TabState.Grouped;
+                    currentTabInfo.Window = window;
                 }
             }
 
@@ -253,13 +247,28 @@ namespace ProperTabGroups.Subsystem
         {
             TabInfo tabInfo = FindOrCreateTabInfo(newWindow);
 
-            switch (tabInfo.State)
+            TabState currentTabState;
+
+            if (tabInfo == null)
+            {
+                currentTabState = TabState.Invalid;
+            }
+            else if (IsTabContainedInAnyGroup(tabInfo))
+            {
+                currentTabState = TabState.Grouped;
+            }
+            else
+            {
+                currentTabState = TabState.Unassigned;
+            }
+
+            switch (currentTabState)
             {
                 case TabState.Grouped:
                     HandleInGroup(tabInfo, newWindow);
                     break;
                 case TabState.Unassigned:
-                    HandleUngrouped(tabInfo, newWindow);
+                    HandleUngrouped(tabInfo);
                     break;
                 case TabState.Invalid:
                     HandleInvalid(tabInfo, newWindow);
@@ -268,7 +277,7 @@ namespace ProperTabGroups.Subsystem
                     throw new ArgumentOutOfRangeException();
             }
 
-            //AddUniqueTabToAllTabs(tabInfo);
+            AddUniqueTabToAllTabs(tabInfo);
 
             RealignTabsToFilteredGroups();
         }
@@ -281,30 +290,23 @@ namespace ProperTabGroups.Subsystem
                 activeTabInfo.Window = newWindow;
                 activeTabInfo.DocumentPath = newWindow.Document.FullName;
                 activeTabInfo.ViewKind = newWindow.Kind;
-
-                activeTabInfo.State = TabState.Grouped;
             }
             else
             {
-                tabInfo.State = TabState.Unassigned;
-                HandleUngrouped(tabInfo, newWindow);
+                HandleUngrouped(tabInfo);
             }
         }
 
-        private void HandleUngrouped(TabInfo tabInfo, Window newWindow)
+        private void HandleUngrouped(TabInfo tabInfo)
         {
-            if (UnassignedTabsGroupSource.Contains(tabInfo) || UnassignedTabsGroupSource.Any(x => x.WindowName == newWindow.Caption))
-            {
-                tabInfo.Window = newWindow;
-                tabInfo.State = TabState.Unassigned;
-                return;
-            }
+            //if (UnassignedTabsGroupSource.Contains(tabInfo) || UnassignedTabsGroupSource.Any(x => x.WindowName == newWindow.Caption))
+            //{
+            //    tabInfo.Window = newWindow;
+            //    return;
+            //}
             //AddUniqueTabToAllTabs(tabInfo);
 
-            //if (!tabInfo.Filters.Any())
-            //{
-            //    tabInfo.Filters.Add(UnassignedTabsGroupGuid);
-            //}
+
         }
 
         private void HandleInvalid(TabInfo tabInfo, Window newWindow)
@@ -316,7 +318,6 @@ namespace ProperTabGroups.Subsystem
                 CorrectTabInfo(tabInfo, newWindow);
                 // After correction, re-evaluate the state
                 TabState newState = EvaluateTabState(tabInfo);
-                tabInfo.State = newState;
                 // Call the appropriate method based on the new state
                 switch (newState)
                 {
@@ -324,7 +325,7 @@ namespace ProperTabGroups.Subsystem
                         HandleInGroup(tabInfo, newWindow);
                         break;
                     case TabState.Unassigned:
-                        HandleUngrouped(tabInfo, newWindow);
+                        HandleUngrouped(tabInfo);
                         break;
                     default:
                         // If state remains invalid, log and remove
@@ -385,13 +386,7 @@ namespace ProperTabGroups.Subsystem
 
             TabInfo tabInfoByName = GetTabInfoByName(window.Caption);
 
-            if (tabInfoByName != null)
-            {
-                return tabInfoByName;
-            }
-
-
-            return new TabInfo(window, []) { State = TabState.Unassigned };
+            return tabInfoByName != null ? tabInfoByName : new TabInfo(window, []);
         }
 
         private void WindowClosing(Window closingWindow)
@@ -413,6 +408,10 @@ namespace ProperTabGroups.Subsystem
                 }
             }
 
+
+            // Somehow here I need to deselect a window when its closed.
+
+
             // Process the TabInfo based on its current group assignment
             if (UnassignedTabsGroupSource.Contains(tabInfo))
             {
@@ -420,13 +419,13 @@ namespace ProperTabGroups.Subsystem
                 UnassignedTabsGroupSource.Remove(tabInfo);
                 Debug.WriteLine("TabInfo removed from unassigned tabs.");
 
-                //// Check if the TabInfo is contained in any group
-                //if (!IsTabContainedInAnyGroup(tabInfo))
-                //{
-                //    // Only remove from AllTabInfos if not contained in any group
-                //    AllTabInfos.Remove(tabInfo);
-                //    Debug.WriteLine("TabInfo removed from all tabs.");
-                //}
+                // Check if the TabInfo is contained in any group
+                if (!IsTabContainedInAnyGroup(tabInfo))
+                {
+                    // Only remove from AllTabInfos if not contained in any group
+                    AllTabInfos.Remove(tabInfo);
+                    Debug.WriteLine("TabInfo removed from all tabs.");
+                }
             }
             else
             {
@@ -482,8 +481,6 @@ namespace ProperTabGroups.Subsystem
                 CollectionViewSource.GetDefaultView(tabGroup.TabsInGroupSource).Refresh();
             }
         }
-
-
         public void RealignTabsToFilteredGroups()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -533,7 +530,7 @@ namespace ProperTabGroups.Subsystem
             {
                 foreach (TabInfo tab in group.Value)
                 {
-                    if (!group.Key.TabsInGroupSource.Contains(tab))
+                    if (group.Key.TabsInGroupSource.All(x => x.WindowName != tab.WindowName))
                     {
                         group.Key.TabsInGroupSource.Add(tab);
                     }
