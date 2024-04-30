@@ -208,5 +208,14 @@ namespace ProperTabGroups
         {
             DocumentWellManagementSubsystem.RefreshAll();
         }
+
+        private void ClearFilters_OnClick(object sender, RoutedEventArgs e)
+        {
+            TabInfo tabInfo = GetClickedTabInfo(sender);
+
+            if (tabInfo == null) return;
+
+            tabInfo.Filters.Clear();
+        }
     }
 }

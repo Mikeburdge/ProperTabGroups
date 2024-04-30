@@ -115,7 +115,7 @@ namespace ProperTabGroups.TabGroupScripts
                     _isSelected = value;
                     OnPropertyChanged();
 
-                    DocumentWellManagementSubsystem.Instance.SetIfTabIsSelected(this, value);
+                    //DocumentWellManagementSubsystem.Instance.SetIfTabIsSelected(this, value);
                 }
             }
         }
