@@ -26,6 +26,7 @@
             <Setter Property="BorderThickness" Value="0"/>
             <!-- Remove indentation for the nested ListView -->
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
         </Style>
 
         <!--___________________________________________-->
@@ -134,7 +135,7 @@
         <!--_________Group Hiding Bool Converter_________-->
         <!--_____________________________________________-->
         <!--<BooleanToVisibilityConverter x:Key="BoolToVis" />-->
-        
+
         <!--____________________________________________-->
         <!--__________Tab Info List View Style__________-->
         <!--____________________________________________-->
@@ -178,9 +179,10 @@
 
     </UserControl.Resources>
     <!--________________________________________________________________________________________________________________________________________________________________-->
-                                                                    <!--_____________________________________________-->
-                                                                    <!--___________Start of Vertical Stack___________-->
-                                                                    <!--_____________________________________________-->
+    <!--_____________________________________________-->
+    <!--___________Start of Vertical Stack___________-->
+    <!--_____________________________________________-->
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Orientation="Vertical">
 
         <!--_____________________________________________-->
@@ -237,7 +239,7 @@
                               SelectionChanged="ListView_SelectionChanged" 
                               MouseDoubleClick="ModifyFilters_OnClick"
                               ItemContainerStyle="{StaticResource TabInfoListViewStyle}">
-                       
+
                         <!--_______________________________________________-->
                         <!--__________Tab Info List View Contents__________-->
                         <!--_______________________________________________-->
@@ -261,7 +263,8 @@
                   ItemsSource="{Binding UnassignedTabsGroup.View}" 
                   ItemContainerStyle="{StaticResource TabInfoListViewStyle}"
                   SelectionChanged="ListView_SelectionChanged" 
-                  MouseDoubleClick="ModifyFilters_OnClick">
+                  MouseDoubleClick="ModifyFilters_OnClick" 
+                  IsTextSearchEnabled="True">
 
             <!--____________________________________________-->
             <!--___________Unassigned Tabs Header___________-->
@@ -289,4 +292,5 @@
             </ListView.ItemTemplate>
         </ListView>
     </StackPanel>
+    </ScrollViewer>
 </UserControl>
