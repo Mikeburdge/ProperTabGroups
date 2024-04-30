@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vsShell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
              xmlns:tabGroupScripts="clr-namespace:ProperTabGroups.TabGroupScripts"
+             xmlns:local="clr-namespace:ProperTabGroups.ToolWindows.OptionsWindow"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300"
              d:Background="White"
@@ -183,24 +184,17 @@
                                                                     <!--_____________________________________________-->
     <StackPanel Orientation="Vertical">
 
-        <!--_____________________________________________-->
-        <!--___________Add New Tab Group Stuff___________-->
-        <!--_____________________________________________-->
-        <Button Content="Add Tab Group" Click="AddNewGroup"/>
-        <Popup Name="InputPopup" Placement="RelativePoint" Width="200" Height="100" IsOpen="False">
-            <Border BorderBrush="Black" BorderThickness="1" Background="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}">
-                <StackPanel Margin="10">
-                    <TextBlock Text="Enter a string:"/>
-                    <TextBox Name="InputTextBox"/>
-                    <Button Content="Submit" Margin="0,10,0,0" Click="SubmitPopup_Click"/>
-                </StackPanel>
-            </Border>
-        </Popup>
 
-        <!--____________________________________________-->
-        <!--_____________Refresh All Button_____________-->
-        <!--____________________________________________-->
-        <Button Content="Refresh All" Click="RefreshAll"/>
+
+
+        <!--______________________________________________-->
+        <!--________________Options Window________________-->
+        <!--______________________________________________-->
+        <local:OptionsWindow/>
+
+
+
+
 
         <!--_____________________________________________-->
         <!--_____________Tab Group List View_____________-->

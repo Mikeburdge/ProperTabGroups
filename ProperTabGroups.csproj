@@ -58,6 +58,9 @@
     <Compile Include="Subsystems\SaveLoadManager.cs" />
     <Compile Include="Subsystems\SolutionEventsListener.cs" />
     <Compile Include="TabGroupScripts\TabInfo.cs" />
+    <Compile Include="ToolWindows\OptionsWindow\OptionsWindow.xaml.cs">
+      <DependentUpon>OptionsWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="VSCommandTable.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -70,6 +73,8 @@
       <Generator>VsixManifestGenerator</Generator>
       <LastGenOutput>source.extension.cs</LastGenOutput>
     </None>
+    <Content Include="Resources\ChevronDown.png" />
+    <Content Include="Resources\ChevronUp.png" />
     <Content Include="Resources\Icon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -85,6 +90,10 @@
   <ItemGroup>
     <Compile Include="ToolWindows\MyToolWindow.cs" />
     <Page Include="DualListSelector\DualListboxSelectorWindowControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ToolWindows\OptionsWindow\OptionsWindow.xaml">
+      <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="ToolWindows\ProperTabGroupsWindowControl.xaml">

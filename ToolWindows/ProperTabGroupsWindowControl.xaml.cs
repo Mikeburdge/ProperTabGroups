@@ -94,25 +94,7 @@ namespace ProperTabGroups
 
             ViewModel.SelectOnlyOneTab(selectedTabInfo);
         }
-        private void AddNewGroup(object sender, RoutedEventArgs e)
-        {
-            // Open the popup
-            InputPopup.IsOpen = true;
-        }
-
-        private void SubmitPopup_Click(object sender, RoutedEventArgs e)
-        {
-            // Capture the input string
-            string userInput = InputTextBox.Text;
-
-            // Close the popup
-            InputPopup.IsOpen = false;
-
-            // Clear the TextBox for the next input
-            InputTextBox.Text = string.Empty;
-
-            ViewModel.CreateNewTabGroup(userInput);
-        }
+       
 
         private void TabGroupsListView_OnMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
