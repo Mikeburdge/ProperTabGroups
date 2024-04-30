@@ -75,5 +75,25 @@ namespace ProperTabGroups.ToolWindows.OptionsWindow
         {
             DocumentWellManagementSubsystem.RefreshAll();
         }
+
+        private void SaveAll_Clicked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void LoadAll_Clicked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Export_Clicked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Import_Clicked(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

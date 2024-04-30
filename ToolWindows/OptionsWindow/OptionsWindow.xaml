@@ -22,6 +22,18 @@
 			<Setter Property="BorderBrush" Value="{DynamicResource {x:Static vsShell:VsBrushes.AccentBorderKey}}"/>
 			<Setter Property="BorderThickness" Value="1"/>
 
+			<Setter Property="Template">
+				<Setter.Value>
+					<ControlTemplate TargetType="Button">
+						<Border Background="{TemplateBinding Background}"
+						        BorderBrush="{TemplateBinding BorderBrush}"
+						        BorderThickness="{TemplateBinding BorderThickness}">
+							<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+						</Border>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
+			
 			<!-- Mouse over state properties -->
 			<Style.Triggers>
 				<Trigger Property="IsMouseOver" Value="True">
@@ -40,20 +52,8 @@
 					<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.GrayTextKey}}"/>
 				</Trigger>
 			</Style.Triggers>
-			
-			<Setter Property="Template">
-				<Setter.Value>
-					<ControlTemplate TargetType="Button">
-						<Border Background="{TemplateBinding Background}"
-						        BorderBrush="{TemplateBinding BorderBrush}"
-						        BorderThickness="{TemplateBinding BorderThickness}">
-							<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-						</Border>
-					</ControlTemplate>
-				</Setter.Value>
-			</Setter>
 
-</Style>
+		</Style>
 
 		<Style x:Key="ArrowButtonStyle" TargetType="Button">
 			<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.CommandBarHoverKey}}"/>
@@ -93,63 +93,81 @@
 	<!-- Big Box of Options -->
 	<StackPanel Orientation="Vertical">
 
-		<WrapPanel x:Name="OptionsPanel" 
-			  Visibility="Collapsed" 
-		      Height="Auto"
-			  HorizontalAlignment="Center"
-				   
-				   
-			  >
+		<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+			<WrapPanel x:Name="OptionsPanel"
+			           Visibility="Collapsed" 
+			           Height="Auto"
+			           HorizontalAlignment="Center"
+			>
 
 
-			<!--_____________________________________________-->
-			<!--___________Add New Tab Group Stuff___________-->
-			<!--_____________________________________________-->
-			<Button Click="AddNewGroup"
+				<!--_____________________________________________-->
+				<!--___________Add New Tab Group Stuff___________-->
+				<!--_____________________________________________-->
+				<Button Click="AddNewGroup"
 					Style="{StaticResource OptionsButtonDefault}"
 					
 					>
-				<TextBlock Text="Add Tab Group" TextWrapping="Wrap" TextAlignment="Center"/>
-			</Button>
+					<TextBlock Text="Add Tab Group" TextWrapping="Wrap" TextAlignment="Center"/>
+				</Button>
 
-			<Popup Name="InputPopup" Placement="RelativePoint" Width="200" Height="100" IsOpen="False">
-				<Border BorderBrush="Black" BorderThickness="1" Background="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}">
-					<StackPanel Margin="10">
-						<TextBlock Text="Enter a string:"/>
-						<TextBox Name="InputTextBox"/>
-						<Button Content="Submit" Margin="0,10,0,0" Click="SubmitPopup_Click"/>
-					</StackPanel>
-				</Border>
-			</Popup>
+				<Popup Name="InputPopup" Placement="RelativePoint" Width="200" Height="100" IsOpen="False">
+					<Border BorderBrush="Black" BorderThickness="1" Background="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}">
+						<StackPanel Margin="10">
+							<TextBlock Text="Enter a string:"/>
+							<TextBox Name="InputTextBox"/>
+							<Button Content="Submit" Margin="0,10,0,0" Click="SubmitPopup_Click"/>
+						</StackPanel>
+					</Border>
+				</Popup>
 
-
-			<!--____________________________________________-->
-			<!--_____________Refresh All Button_____________-->
-			<!--____________________________________________-->
-			<Button
+				<!--____________________________________________-->
+				<!--_____________Refresh All Button_____________-->
+				<!--____________________________________________-->
+				<Button
 					Click="RefreshAll"
-					Style="{StaticResource OptionsButtonDefault}"
-					
-			>
-				<TextBlock Text="Refresh All" TextWrapping="Wrap" TextAlignment="Center"/>
-			</Button>
+					Style="{StaticResource OptionsButtonDefault}">
 
-			<Button Click="RefreshAll"
-			        Style="{StaticResource OptionsButtonDefault}"
-					
-			>
-				<TextBlock Text="aaaaaaaaa" TextWrapping="Wrap" TextAlignment="Center"/>
-			</Button>
+					<TextBlock Text="Refresh All" TextWrapping="Wrap" TextAlignment="Center"/>
+				</Button>
 
-			<Button Click="RefreshAll"
-			        Style="{StaticResource OptionsButtonDefault}"
-					
-			>
-				<TextBlock Text="aaaaaaaaa" TextWrapping="Wrap" TextAlignment="Center"/>
-			</Button>
+				<!--____________________________________________-->
+				<!--__________________Save All__________________-->
+				<!--____________________________________________-->
+				<Button Click="SaveAll_Clicked" 
+					Style="{StaticResource OptionsButtonDefault}">
+					<TextBlock Text="Save All" TextWrapping="Wrap" TextAlignment="Center"/>
+				</Button>
+
+				<!--____________________________________________-->
+				<!--____________________Load____________________-->
+				<!--____________________________________________-->
+				<Button Click="LoadAll_Clicked" 
+					Style="{StaticResource OptionsButtonDefault}">
+
+					<TextBlock Text="Load All" TextWrapping="Wrap" TextAlignment="Center"/>
+				</Button>
+
+				<!--____________________________________________-->
+				<!--___________________Export___________________-->
+				<!--____________________________________________-->
+				<Button Click="Export_Clicked" 
+					Style="{StaticResource OptionsButtonDefault}">
+					<TextBlock Text="Export" TextWrapping="Wrap" TextAlignment="Center"/>
+				</Button>
+
+				<!--____________________________________________-->
+				<!--___________________Import___________________-->
+				<!--____________________________________________-->
+				<Button Click="Import_Clicked" 
+					Style="{StaticResource OptionsButtonDefault}">
+
+					<TextBlock Text="Import" TextWrapping="Wrap" TextAlignment="Center"/>
+				</Button>
 
 
-		</WrapPanel>
+			</WrapPanel>
+		</ScrollViewer>
 
 		<Button x:Name="OpenCloseButton" 
 				Click="ToggleImageButton_Click" 
