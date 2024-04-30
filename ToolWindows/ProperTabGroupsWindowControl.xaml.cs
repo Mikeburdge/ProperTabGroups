@@ -14,6 +14,7 @@ using SelectionChangedEventArgs = System.Windows.Controls.SelectionChangedEventA
 using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
 using Window = EnvDTE.Window;
 using System.Windows.Data;
+using System.Diagnostics;
 
 namespace ProperTabGroups
 {
@@ -38,54 +39,20 @@ namespace ProperTabGroups
 
             if (_dte == null) return;
             _dte.Events.SolutionEvents.Opened += SolutionOpened;
-            _dte.Events.WindowEvents.WindowActivated += WindowActivated;
 
-            ViewModel.GroupsListView = TabGroupsListView;
+            ViewModel.ProperTabGroupWindowControlRef = this;
+
         }
-
 
         private void SolutionOpened()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            if (_dte.ActiveDocument != null)
-            {
-                SelectTabGroupInListView(_dte.ActiveDocument.Name);
-            }
+
+            if (_dte.ActiveDocument is not { ActiveWindow: not null }) return;
+
+            TabInfo tab = ViewModel.GetTabInfoFromWindow(_dte.ActiveDocument.ActiveWindow);
+            ViewModel.SelectOnlyOneTab(tab);
         }
-        private void WindowActivated(Window GotFocus, Window LostFocus)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            // This "Pattern" below also checks if GotFocus is null
-            if (GotFocus is { Kind: "Document" })
-            {
-                //ClearSelection();
-                SelectTabGroupInListView(GotFocus.Caption);
-            }
-        }
-        private IEnumerable<ListView> GetAllListViews(DependencyObject parent)
-        {
-            // This function iteratively searches through the children of the provided DependencyObject,
-            // looking for ListView instances. If it finds one, it yields it. If it finds a container
-            // (something that can have children), it recursively searches through its children.
-
-            if (parent == null) yield break;
-
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
-
-                if (child is ListView view)
-                {
-                    yield return view;
-                }
-
-                foreach (ListView childOfChild in GetAllListViews(child))
-                {
-                    yield return childOfChild;
-                }
-            }
-        }
-
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (isSelectionHandling) return;
@@ -113,9 +80,6 @@ namespace ProperTabGroups
                 }
 
                 ViewModel.OpenFileSafely(selectedTabInfo);
-
-                // Old Show File, only reason im keeping this here is because I think this also worked for opening files
-                //_dte.ExecuteCommand("File.OpenFile", selectedTabInfo.DocumentPath);
             }
             finally
             {
@@ -128,98 +92,8 @@ namespace ProperTabGroups
             TabInfo selectedTabInfo = GetClickedTabInfo(sender);
             if (selectedTabInfo == null) return;
 
-            DeselectAllTabsExceptOne(selectedTabInfo);
-
-            //IEnumerable<ListView> allListViews = GetAllListViews(this);
-
-            //// Loop through each ListView
-            //foreach (ListView currentListView in allListViews)
-            //{
-            //    // Skip the ListView that initiated the call to prevent altering its state
-            //    if (currentListView == sender as ListView) continue;
-
-            //    foreach (object item in currentListView.Items)
-            //    {
-            //        // Skip items that are not of type TabInfo
-            //        if (item is not TabInfo currentTabInfo) continue;
-
-            //        // Conditions to skip the deselection:
-            //        // 1. The TabInfo corresponds to a visible, non-null window object.
-            //        // 2. The TabInfo is the one that was selected.
-            //        if (/*currentTabInfo.Window is { Object: not null, Visible: true } ||*/ false)
-            //        {
-            //            continue;
-            //        }
-
-            //        bool shouldTabBeSelected = currentTabInfo == selectedTabInfo;
-
-            //        // Retrieve the ListViewItem corresponding to the currentTabInfo
-            //        if (currentListView.ItemContainerGenerator.ContainerFromItem(currentTabInfo) is ListViewItem listViewItem)
-            //        {
-            //            // Deselect the ListViewItem
-            //            listViewItem.IsSelected = shouldTabBeSelected;
-            //        }
-            //    }
-            //}
+            ViewModel.SelectOnlyOneTab(selectedTabInfo);
         }
-
-        private void DeselectAllTabsExceptOne(TabInfo tabToModify)
-        {
-            foreach (TabInfo tabInfo in ViewModel.AllTabInfos)
-            {
-                bool shouldTabBeSelected = tabInfo.Equals(tabToModify);
-
-                SetIfTabIsSelected(tabInfo, shouldTabBeSelected);
-            }
-        }
-
-        private void SetIfTabIsSelected(TabInfo tabToModify, bool shouldBeSelected)
-        {
-            // Assuming there's a method to retrieve all ListViews in the current context
-            IEnumerable<ListView> allListViews = GetAllListViews(this);
-
-            // Loop through each ListView in the application or window
-            foreach (ListView currentListView in allListViews)
-            {
-                // Check if the ListView contains the TabInfo item
-                foreach (object item in currentListView.Items)
-                {
-                    if (item is not TabInfo currentTabInfo || currentTabInfo != tabToModify) continue;
-
-                    // Retrieve the ListViewItem corresponding to the currentTabInfo
-                    if (currentListView.ItemContainerGenerator.ContainerFromItem(currentTabInfo) is ListViewItem listViewItem)
-                    {
-                        // Set the selection state of the ListViewItem
-                        listViewItem.IsSelected = shouldBeSelected;
-                    }
-                    // Since TabInfo was found and handled, no need to continue checking this ListView
-                    break;
-                }
-            }
-        }
-
-        private void SelectTabGroupInListView(string activatedTabName)
-        {
-            List<TabInfo> documentWell = DocumentWellManagementSubsystem.Instance.AllTabInfos;
-
-            TabInfo matchingTabInfo = documentWell.FirstOrDefault(tabInfo => tabInfo.WindowName.Equals(activatedTabName));
-
-            if (matchingTabInfo == null) return;
-
-            // Set the flag before changing the selection
-            _bIsSelectionChangeProgrammatic = true;
-
-            try
-            {
-                SetIfTabIsSelected(matchingTabInfo, true);
-            }
-            finally
-            {
-                // Reset the flag after changing the selection
-                _bIsSelectionChangeProgrammatic = false;
-            }
-        }
-
         private void AddNewGroup(object sender, RoutedEventArgs e)
         {
             // Open the popup

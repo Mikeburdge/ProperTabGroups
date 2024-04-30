@@ -9,6 +9,7 @@ using System.Windows.Data;
 using System.Windows.Threading;
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.OLE.Interop;
 using ProperTabGroups.Subsystem;
 using Window = EnvDTE.Window;
@@ -103,7 +104,21 @@ namespace ProperTabGroups.TabGroupScripts
     public class TabInfo : INotifyPropertyChanged
     {
         // todo: probably for the best to create a non-persistent guid. one that is given at the start of the session and used to identify tabd within sessions. MAYBE
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                if (_isSelected != value)
+                {
+                    _isSelected = value;
+                    OnPropertyChanged();
 
+                    DocumentWellManagementSubsystem.Instance.SetIfTabIsSelected(this, value);
+                }
+            }
+        }
         public Window Window { get; set; }
 
         private ObservableCollection<Guid> _filters;

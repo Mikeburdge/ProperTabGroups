@@ -21,6 +21,8 @@ using Microsoft.VisualStudio.Experimentation;
 using System.Net.NetworkInformation;
 using Microsoft.Internal.VisualStudio.Shell;
 using System.Windows.Documents;
+using System.Windows.Media;
+using Community.VisualStudio.Toolkit;
 
 namespace ProperTabGroups.Subsystem
 {
@@ -104,7 +106,7 @@ namespace ProperTabGroups.Subsystem
 
         public readonly List<TabInfo> AllTabInfos;
 
-        public ListView GroupsListView { get; set; }
+        public ProperTabGroupsWindowControl ProperTabGroupWindowControlRef { get; set; }
 
 
         private DocumentWellManagementSubsystem()
@@ -202,7 +204,20 @@ namespace ProperTabGroups.Subsystem
             // Subscribe to window creation and closing events to manage tabs dynamically
             _dte.Events.WindowEvents.WindowCreated += WindowCreated;
             _dte.Events.WindowEvents.WindowClosing += WindowClosing;
+            _dte.Events.WindowEvents.WindowActivated += WindowActivated;
         }
+
+        private void WindowActivated(Window gotFocus, Window lostFocus)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            // This "Pattern" below also checks if GotFocus is null
+            if (gotFocus is { Kind: "Document" })
+            {
+                TabInfo tab = GetTabInfoFromWindow(gotFocus);
+                SelectOnlyOneTab(tab);
+            }
+        }
+
 
         // Helper method to create a new TabInfo based on an open window
         private TabInfo CreateNewTabInfo(Window window)
@@ -214,35 +229,6 @@ namespace ProperTabGroups.Subsystem
         {
             return tabInfo.Filters.Contains(group.GroupGuid);
         }
-
-        //private void SolutionOpened()
-        //{
-        //    ThreadHelper.ThrowIfNotOnUIThread();
-
-        //    List<TabGroup> tabGroups = SaveLoadManager.Instance.LoadTabGroupsFromJson();
-
-        //    AllTabInfos.Clear();
-        //    _groupsDocumentWellSource.Clear();
-        //    foreach (TabGroup tabGroup in tabGroups)
-        //    {
-        //        AllTabInfos.AddRange(tabGroup.TabsInGroupSource);
-
-        //        _groupsDocumentWellSource.Add(tabGroup);
-        //    }
-
-        //    foreach (Window window in _dte.Windows.Cast<Window>().Where(window => window.Kind is "Document"))
-        //    {
-        //        if (AllTabInfos.Any(x => x.WindowName.Equals(window.Caption))) continue;
-
-        //        AddUniqueTabToAllTabs(new TabInfo(window, []));
-        //    }
-
-        //    RealignTabsToFilteredGroups();
-
-        //    _dte.Events.WindowEvents.WindowCreated += WindowCreated;
-        //    _dte.Events.WindowEvents.WindowClosing += WindowClosing;
-        //}
-
         private void WindowCreated(Window newWindow)
         {
             TabInfo tabInfo = FindOrCreateTabInfo(newWindow);
@@ -408,9 +394,7 @@ namespace ProperTabGroups.Subsystem
                 }
             }
 
-
-            // Somehow here I need to deselect a window when its closed.
-
+            SelectOnlyOneTab(tabInfo);
 
             // Process the TabInfo based on its current group assignment
             if (UnassignedTabsGroupSource.Contains(tabInfo))
@@ -434,6 +418,13 @@ namespace ProperTabGroups.Subsystem
 
             // Optionally, perform additional cleanup or state updates
             PostTabInfoRemovalCleanup(tabInfo);
+        }
+        public void SelectOnlyOneTab(TabInfo tabToModify)
+        {
+            foreach (TabInfo tabInfo in AllTabInfos)
+            {
+                tabInfo.IsSelected = tabInfo.Equals(tabToModify);
+            }
         }
 
         // Helper methods used in WindowClosing
@@ -586,7 +577,7 @@ namespace ProperTabGroups.Subsystem
             tabGroup.TabsInGroupSource.Add(tabInfo);
         }
 
-        private TabInfo GetTabInfoByName(string inName)
+        public TabInfo GetTabInfoByName(string inName)
         {
             return AllTabInfos.FirstOrDefault(x => x.WindowName.Equals(inName));
         }
@@ -691,14 +682,7 @@ namespace ProperTabGroups.Subsystem
 
         public TabInfo GetTabInfoFromWindow(Window window)
         {
-            foreach (TabInfo currentTabInfo in AllTabInfos)
-            {
-                if (currentTabInfo.Window == window)
-                {
-                    return currentTabInfo;
-                }
-            }
-            return null;
+            return AllTabInfos.FirstOrDefault(currentTabInfo => currentTabInfo.Window == window);
         }
 
         public string GetGroupNameFromGuid(Guid inGuid)
@@ -775,6 +759,54 @@ namespace ProperTabGroups.Subsystem
                 // Log the error or inform the user through a dialog, depending on your application's needs.
             }
         }
+        public IEnumerable<ListView> GetAllListViews(DependencyObject parent)
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                if (child is ListView listView)
+                {
+                    yield return listView;
+                    // Recursively search within this ListView
+                    foreach (ListView subItem in GetAllListViews(listView))
+                    {
+                        yield return subItem;
+                    }
+                }
+                else
+                {
+                    // Recursively search in non-ListView children
+                    foreach (ListView subItem in GetAllListViews(child))
+                    {
+                        yield return subItem;
+                    }
+                }
+            }
+        }
+        public void SetIfTabIsSelected(TabInfo tabToModify, bool shouldBeSelected)
+        {
+            IEnumerable<ListView> allListViews = GetAllListViews(ProperTabGroupWindowControlRef);
+
+            // Loop through each ListView in the application or window
+            foreach (ListView currentListView in allListViews)
+            {
+                // Check if the ListView contains the TabInfo item
+                foreach (object item in currentListView.Items)
+                {
+                    if (item is not TabInfo currentTabInfo || currentTabInfo != tabToModify) continue;
+
+                    // Retrieve the ListViewItem corresponding to the currentTabInfo
+                    if (currentListView.ItemContainerGenerator.ContainerFromItem(currentTabInfo) is ListViewItem listViewItem)
+                    {
+                        // Set the selection state of the ListViewItem
+                        listViewItem.IsSelected = shouldBeSelected;
+                    }
+                    // Since TabInfo was found and handled, no need to continue checking this ListView
+                    break;
+                }
+            }
+        }
+
 
     }
 }

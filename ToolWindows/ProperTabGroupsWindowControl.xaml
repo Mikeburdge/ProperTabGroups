@@ -93,7 +93,7 @@
             <Setter Property="BorderThickness" Value="0"/>
 
             <!-- Style to select the tab when we want it selected -->
-            <!--<Setter Property="IsSelected" Value="{Binding _IsSelected, Mode=TwoWay}" />-->
+            <Setter Property="IsSelected" Value="{Binding _IsSelected}" />
 
             <!-- Style to remove focus and more for the ListViewItem -->
             <Setter Property="Focusable" Value="false"/>
@@ -135,7 +135,7 @@
         <!--_____________________________________________-->
         <!--_________Group Hiding Bool Converter_________-->
         <!--_____________________________________________-->
-        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <!--<BooleanToVisibilityConverter x:Key="BoolToVis" />-->
         
         <!--____________________________________________-->
         <!--__________Tab Info List View Style__________-->
@@ -199,12 +199,11 @@
             </Border>
         </Popup>
 
-        <!--_____________________________________________-->
-        <!--_____________Tab Group List View_____________-->
-        <!--_____________________________________________-->
-
-
+        <!--____________________________________________-->
+        <!--_____________Refresh All Button_____________-->
+        <!--____________________________________________-->
         <Button Content="Refresh All" Click="RefreshAll"/>
+
         <!--_____________________________________________-->
         <!--_____________Tab Group List View_____________-->
         <!--_____________________________________________-->
