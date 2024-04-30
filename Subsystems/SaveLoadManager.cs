@@ -40,6 +40,7 @@ namespace ProperTabGroups.Subsystems
         {
             InitSaveLoadManager();
         }
+
         public void InitSaveLoadManager()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -51,6 +52,7 @@ namespace ProperTabGroups.Subsystems
             {
                 Directory.CreateDirectory(extensionFolder);
             }
+
             settingsFilePath = Path.Combine(extensionFolder, "settings.json");
         }
 
@@ -64,22 +66,32 @@ namespace ProperTabGroups.Subsystems
             ThreadHelper.ThrowIfNotOnUIThread();
             try
             {
-                List<SerializableTabGroup> serializableTabGroups = tabGroups.Select(tg => new SerializableTabGroup
+                List<SerializableTabGroup> serializableTabGroupsObject = tabGroups.Select(tg => new SerializableTabGroup
                 {
                     Name = tg.Name,
                     GroupGuid = tg.GroupGuid,
                     BIsLocked = tg.BIsLocked,
                     BIsVisible = tg.BIsVisible,
                     ColourCode = tg.ColourCode,
-                    Tabs = tg.TabsInGroupSource.Select(ti => new SerializableTabInfo
-                    {
-                        WindowName = ti.WindowName,
-                        DocumentPath = ti.DocumentPath,
-                        Filters = ti.Filters.ToList() // Assuming this is serializable as is
-                    }).ToList()
                 }).ToList();
 
-                string json = JsonConvert.SerializeObject(serializableTabGroups, Formatting.Indented);
+                List<SerializableTabInfo> serializableTabInfosObject = DocumentWellManagementSubsystem.Instance
+                    .AllTabInfos
+                    .Where(ti => ti.Filters.Any()).Select(tabInfo => new SerializableTabInfo()
+                    {
+                        WindowName = tabInfo.WindowName,
+                        DocumentPath = tabInfo.DocumentPath,
+                        ViewKind = tabInfo.ViewKind,
+                        Filters = tabInfo.Filters.ToList()
+                    }).ToList();
+
+                SerializableProperTabCollection serializableProperTabCollection = new SerializableProperTabCollection()
+                {
+                    serializableTabGroups = serializableTabGroupsObject,
+                    serializableTabInfos = serializableTabInfosObject
+                };
+
+                string json = JsonConvert.SerializeObject(serializableProperTabCollection, Formatting.Indented);
                 File.WriteAllText(settingsFilePath, json);
             }
             catch (Exception ex)
@@ -88,10 +100,11 @@ namespace ProperTabGroups.Subsystems
             }
         }
 
-        public List<TabGroup> LoadTabGroupsFromJson()
+        public bool LoadTabGroupsFromJson(ref List<TabGroup> outTabGroups, ref List<TabInfo> outTabInfos)
         {
             // Deserialize the JSON back into the list of serializable TabGroups
             List<TabGroup> tabGroups = new List<TabGroup>();
+            List<TabInfo> allLoadedTabs = new List<TabInfo>();
 
             try
             {
@@ -99,43 +112,67 @@ namespace ProperTabGroups.Subsystems
                 {
                     string json = File.ReadAllText(settingsFilePath);
 
-                    List<SerializableTabGroup> serializableTabGroups = JsonConvert.DeserializeObject<List<SerializableTabGroup>>(json);
+                    SerializableProperTabCollection tabGroupsObject =
+                        JsonConvert.DeserializeObject<SerializableProperTabCollection>(json);
 
-                    if (serializableTabGroups == null)
+                    if (tabGroupsObject == null)
                     {
-                        return new List<TabGroup>();
+                        return false;
                     }
 
-                    IEnumerable<Window> allActiveDocuments = _dte.Windows.Cast<Window>().Where(window => window.Kind is "Document");
+                    List<SerializableTabGroup> serializableTabGroups = tabGroupsObject.serializableTabGroups;
+                    List<SerializableTabInfo> serializableTabInfos = tabGroupsObject.serializableTabInfos;
 
-                    foreach (SerializableTabGroup serializableTabGroup in serializableTabGroups)
+                    if (serializableTabGroups != null)
                     {
-                        TabGroup tabGroup = new(serializableTabGroup.Name, serializableTabGroup.BIsLocked,
-                            serializableTabGroup.BIsVisible, serializableTabGroup.GroupGuid)
+                        foreach (SerializableTabGroup serializableTabGroup in serializableTabGroups)
                         {
-                            ColourCode = serializableTabGroup.ColourCode
-                        };
-
-                       
-
-                        foreach (SerializableTabInfo serializableTabInfo in serializableTabGroup.Tabs)
-                        {
-                            Window matchingTabWindow = allActiveDocuments.FirstOrDefault(x => x.Caption == serializableTabInfo.WindowName);
-
-                            TabInfo tabInfo = new TabInfo()
+                            TabGroup tabGroup = new(serializableTabGroup.Name, serializableTabGroup.BIsLocked,
+                                serializableTabGroup.BIsVisible, serializableTabGroup.GroupGuid)
                             {
-                                //IsSelected = serializableTabInfo.IsSelected,
+                                ColourCode = serializableTabGroup.ColourCode
+                            };
+
+                            tabGroups.Add(tabGroup);
+                        }
+                    }
+
+                    List<Window> allActiveDocuments = _dte.Windows.Cast<Window>().Where(window => window.Kind is "Document").ToList();
+
+
+                    foreach (SerializableTabInfo serializableTabInfo in serializableTabInfos)
+                    {
+                        Window matchingTabWindow =
+                            allActiveDocuments.FirstOrDefault(x => x.Caption == serializableTabInfo.WindowName);
+
+                        TabInfo tabInfo;
+
+                        if (matchingTabWindow == null)
+                        {
+                            tabInfo = new TabInfo()
+                            {
+                                //IsSelected = serializableTabInfo.IsSelected
                                 WindowName = serializableTabInfo.WindowName,
-                                Window = matchingTabWindow, // If this is null anyway it means that when we click to open it it "should" open it safely
+                                Window =
+                                    null, // If this is null anyway it means that when we click to open it, it "should" open it safely
                                 DocumentPath = serializableTabInfo.DocumentPath,
                                 ViewKind = serializableTabInfo.ViewKind,
                                 Filters = new ObservableCollection<Guid>(serializableTabInfo.Filters)
                             };
-
-                            tabGroup.TabsInGroupSource.Add(tabInfo);
+                        }
+                        else
+                        {
+                            tabInfo = new TabInfo()
+                            {
+                                WindowName = matchingTabWindow.Caption,
+                                Window = matchingTabWindow,
+                                DocumentPath = matchingTabWindow.Document.FullName,
+                                ViewKind = matchingTabWindow.Kind,
+                                Filters = new ObservableCollection<Guid>(serializableTabInfo.Filters)
+                            };
                         }
 
-                        tabGroups.Add(tabGroup);
+                        allLoadedTabs.Add(tabInfo);
                     }
                 }
             }
@@ -144,7 +181,10 @@ namespace ProperTabGroups.Subsystems
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading tab groups: {ex.Message}");
             }
-            return tabGroups;
+
+            outTabGroups = tabGroups;
+            outTabInfos = allLoadedTabs;
+            return true;
         }
     }
 }

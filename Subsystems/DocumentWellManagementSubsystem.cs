@@ -35,8 +35,8 @@ namespace ProperTabGroups.Subsystem
 
         private const string UnassignedTabsGroupName = "Unassigned Tabs";
         // Beginning to be Deprecated
-        public static Guid UnassignedTabsGroupGuid = new Guid("8CF0C899-378A-4B58-ADD5-4B9C211B6CDF"); //Guid.NewGuid();
-        public static Guid ClosedFileGuid = new Guid("045ca0af-b76a-4222-9958-12a287a26e68");
+        public static Guid UnassignedTabsGroupGuid = new("8CF0C899-378A-4B58-ADD5-4B9C211B6CDF"); //Guid.NewGuid();
+        public static Guid ClosedFileGuid = new("045ca0af-b76a-4222-9958-12a287a26e68");
 
         public CollectionViewSource GroupsDocumentWell { get; set; }
         private ObservableCollection<TabGroup> _groupsDocumentWellSource;
@@ -161,22 +161,25 @@ namespace ProperTabGroups.Subsystem
             ThreadHelper.ThrowIfNotOnUIThread();
 
             // Load the initial state of TabGroups from a persisted state
-            List<TabGroup> tabGroups = SaveLoadManager.Instance.LoadTabGroupsFromJson();
+            List<TabGroup> tabGroups = new();
+            List<TabInfo> tabInfos = new();
+
+            if (!SaveLoadManager.Instance.LoadTabGroupsFromJson(ref tabGroups, ref tabInfos))
+            {
+                Debug.WriteLine("FAILED TO LOAD GROUPS AND TABS");
+            }
 
             // Clear existing tab information and document well sources
             AllTabInfos.Clear();
             GroupsDocumentWellSource.Clear();
-
+            
             // Repopulate groups from the loaded state
             foreach (TabGroup tabGroup in tabGroups)
             {
-                // Add UNIQUE tab infos to all tabs to stop duplication
-                foreach (TabInfo tabInfo in tabGroup.TabsInGroupSource)
-                {
-                    AddUniqueTabToAllTabs(tabInfo);
-                }
                 GroupsDocumentWellSource.Add(tabGroup);
             }
+
+            AllTabInfos.AddRange(tabInfos);
 
             // Process each document window that is currently open in the IDE
             foreach (Window window in _dte.Windows.Cast<Window>().Where(window => window.Kind == "Document"))
@@ -186,16 +189,10 @@ namespace ProperTabGroups.Subsystem
                 if (currentTabInfo != null) continue;
 
                 currentTabInfo = GetTabInfoByName(window.Caption);
-                if (currentTabInfo == null)
-                {
-                    // If no TabInfo exists, create a new one
-                    TabInfo newTabInfo = CreateNewTabInfo(window);
-                    AddUniqueTabToAllTabs(newTabInfo);
-                }
-                else
-                {
-                    currentTabInfo.Window = window;
-                }
+                if (currentTabInfo != null) continue;
+                // If no TabInfo exists, create a new one
+                TabInfo newTabInfo = CreateNewTabInfo(window);
+                AddUniqueTabToAllTabs(newTabInfo);
             }
 
             // After initializing all tabs, realign them to their respective filtered groups
@@ -482,7 +479,7 @@ namespace ProperTabGroups.Subsystem
             Dictionary<Guid, TabGroup> groupLookup = GroupsDocumentWellSource.ToDictionary(g => g.GroupGuid, g => g);
 
             // Preprocess all tabs and organize them by required groups
-            Dictionary<TabGroup, HashSet<TabInfo>> tabsToGroup = new Dictionary<TabGroup, HashSet<TabInfo>>();
+            Dictionary<TabGroup, HashSet<TabInfo>> tabsToGroup = new();
 
             foreach (TabInfo tab in AllTabInfos)
             {
@@ -623,7 +620,7 @@ namespace ProperTabGroups.Subsystem
         public TabGroup CreateNewTabGroup(string groupName, bool isLocked = false)
         {
             // Logic to create a new tab group
-            TabGroup newTabGroup = new TabGroup(name: groupName, bIsLocked: isLocked);
+            TabGroup newTabGroup = new(name: groupName, bIsLocked: isLocked);
 
             // Add to ObservableCollection
             GroupsDocumentWellSource.Add(newTabGroup);

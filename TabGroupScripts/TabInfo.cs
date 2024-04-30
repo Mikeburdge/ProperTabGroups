@@ -11,6 +11,7 @@ using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Settings;
 using ProperTabGroups.Subsystem;
 using Window = EnvDTE.Window;
 
@@ -222,7 +223,6 @@ namespace ProperTabGroups.TabGroupScripts
         public bool BIsLocked { get; set; }
         public bool BIsVisible { get; set; }
         public string ColourCode { get; set; }
-        public List<SerializableTabInfo> Tabs { get; set; } = new List<SerializableTabInfo>();
     }
 
     public class SerializableTabInfo
@@ -231,5 +231,11 @@ namespace ProperTabGroups.TabGroupScripts
         public string DocumentPath { get; set; }
         public string ViewKind { get; set; }
         public List<Guid> Filters { get; set; } = new List<Guid>();
+    }
+
+    public class SerializableProperTabCollection
+    {
+        public List<SerializableTabGroup> serializableTabGroups;
+        public List<SerializableTabInfo> serializableTabInfos;
     }
 }
