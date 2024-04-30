@@ -204,11 +204,6 @@ namespace ProperTabGroups
             // Rest of your method...
         }
 
-        private void RefreshAll(object sender, RoutedEventArgs e)
-        {
-            DocumentWellManagementSubsystem.RefreshAll();
-        }
-
         private void ClearFilters_OnClick(object sender, RoutedEventArgs e)
         {
             TabInfo tabInfo = GetClickedTabInfo(sender);
