@@ -26,7 +26,6 @@
             <Setter Property="BorderThickness" Value="0"/>
             <!-- Remove indentation for the nested ListView -->
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
-            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
         </Style>
 
         <!--___________________________________________-->
@@ -263,8 +262,7 @@
                   ItemsSource="{Binding UnassignedTabsGroup.View}" 
                   ItemContainerStyle="{StaticResource TabInfoListViewStyle}"
                   SelectionChanged="ListView_SelectionChanged" 
-                  MouseDoubleClick="ModifyFilters_OnClick" 
-                  IsTextSearchEnabled="True">
+                  MouseDoubleClick="ModifyFilters_OnClick">
 
             <!--____________________________________________-->
             <!--___________Unassigned Tabs Header___________-->
