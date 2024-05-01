@@ -20,7 +20,7 @@ namespace ProperTabGroups.Subsystems
         private static SaveLoadManager _instance;
         public static SaveLoadManager Instance => _instance ??= new SaveLoadManager();
 
-        private string settingsFilePath;
+        private string defaultSettingsFilePath;
         private DTE _dte;
 
         public SaveLoadManager()
@@ -53,16 +53,17 @@ namespace ProperTabGroups.Subsystems
                 Directory.CreateDirectory(extensionFolder);
             }
 
-            settingsFilePath = Path.Combine(extensionFolder, "settings.json");
+            defaultSettingsFilePath = Path.Combine(extensionFolder, "settings.json");
         }
 
         public void SaveTabGroups()
         {
-            SaveTabGroups(DocumentWellManagementSubsystem.Instance.GroupsDocumentWellSource);
+            SaveTabGroups(defaultSettingsFilePath);
         }
 
-        private void SaveTabGroups(IEnumerable<TabGroup> tabGroups)
+        public void SaveTabGroups(string pathToSave)
         {
+            IEnumerable<TabGroup> tabGroups = DocumentWellManagementSubsystem.Instance.GroupsDocumentWellSource;
             ThreadHelper.ThrowIfNotOnUIThread();
             try
             {
@@ -92,7 +93,7 @@ namespace ProperTabGroups.Subsystems
                 };
 
                 string json = JsonConvert.SerializeObject(serializableProperTabCollection, Formatting.Indented);
-                File.WriteAllText(settingsFilePath, json);
+                File.WriteAllText(pathToSave, json);
             }
             catch (Exception ex)
             {
@@ -102,15 +103,20 @@ namespace ProperTabGroups.Subsystems
 
         public bool LoadTabGroupsFromJson(ref List<TabGroup> outTabGroups, ref List<TabInfo> outTabInfos)
         {
+            return LoadTabGroupsFromJson(ref outTabGroups, ref outTabInfos, defaultSettingsFilePath);
+        }
+
+        public bool LoadTabGroupsFromJson(ref List<TabGroup> outTabGroups, ref List<TabInfo> outTabInfos, string pathToUse)
+        {
             // Deserialize the JSON back into the list of serializable TabGroups
             List<TabGroup> tabGroups = new List<TabGroup>();
             List<TabInfo> allLoadedTabs = new List<TabInfo>();
 
             try
             {
-                if (File.Exists(settingsFilePath))
+                if (File.Exists(pathToUse))
                 {
-                    string json = File.ReadAllText(settingsFilePath);
+                    string json = File.ReadAllText(pathToUse);
 
                     SerializableProperTabCollection tabGroupsObject =
                         JsonConvert.DeserializeObject<SerializableProperTabCollection>(json);
