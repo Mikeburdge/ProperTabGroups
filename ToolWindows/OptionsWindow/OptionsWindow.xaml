@@ -1,0 +1,190 @@
+﻿<UserControl x:Class="ProperTabGroups.ToolWindows.OptionsWindow.OptionsWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:vsShell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
+             xmlns:local="clr-namespace:ProperTabGroups.ToolWindows.OptionsWindow"
+
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="578">
+
+	<UserControl.Resources>
+
+		<Style x:Key="OptionsButtonDefault" TargetType="Button">
+			<Setter Property="Height" Value="50"/>
+			<Setter Property="Width" Value="70"/>
+			<Setter Property="Margin" Value="5"/>
+
+			<!-- Normal state properties -->
+			<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ButtonFaceKey}}"/>
+			<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.ButtonTextKey}}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource {x:Static vsShell:VsBrushes.AccentBorderKey}}"/>
+			<Setter Property="BorderThickness" Value="1"/>
+
+			<Setter Property="Template">
+				<Setter.Value>
+					<ControlTemplate TargetType="Button">
+						<Border Background="{TemplateBinding Background}"
+						        BorderBrush="{TemplateBinding BorderBrush}"
+						        BorderThickness="{TemplateBinding BorderThickness}">
+							<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+						</Border>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
+			
+			<!-- Mouse over state properties -->
+			<Style.Triggers>
+				<Trigger Property="IsMouseOver" Value="True">
+					<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ButtonHighlightKey}}"/>
+					<Setter Property="BorderBrush" Value="{DynamicResource {x:Static vsShell:VsBrushes.AccentBorderKey}}"/>
+				</Trigger>
+
+				<!-- Pressed state properties -->
+				<Trigger Property="IsPressed" Value="True">
+					<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.AccentDarkKey}}"/>
+				</Trigger>
+
+				<!-- Disabled state properties -->
+				<Trigger Property="IsEnabled" Value="False">
+					<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.ButtonShadowKey}}"/>
+					<Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.GrayTextKey}}"/>
+				</Trigger>
+			</Style.Triggers>
+
+		</Style>
+
+		<Style x:Key="ArrowButtonStyle" TargetType="Button">
+			<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.CommandBarHoverKey}}"/>
+			<Setter Property="Foreground" Value="Black"/>
+			<Setter Property="BorderBrush" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Padding" Value="5"/>
+			<!--<Setter Property="Width" Value="50"/>-->
+			<Setter Property="Height" Value="30"/>
+			<Setter Property="Cursor" Value="Hand"/>
+			<Setter Property="Template">
+				<Setter.Value>
+					<ControlTemplate TargetType="Button">
+						<Border Background="{TemplateBinding Background}"
+						        BorderBrush="{TemplateBinding BorderBrush}"
+						        BorderThickness="{TemplateBinding BorderThickness}">
+							<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+						</Border>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
+
+			<Style.Triggers>
+				<Trigger Property="IsMouseOver" Value="True">
+					<Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.CommandBarHoverOverSelectedKey}}"/>
+					<Setter Property="Foreground" Value="Transparent"/>
+				</Trigger>
+				<Trigger Property="IsPressed" Value="True">
+					<Setter Property="Background" Value="#787878"/>
+					<!-- Darker shade for active -->
+				</Trigger>
+			</Style.Triggers>
+		</Style>
+
+	</UserControl.Resources>
+
+	<!-- Big Box of Options -->
+	<StackPanel Orientation="Vertical">
+
+		<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+			<WrapPanel x:Name="OptionsPanel"
+			           Visibility="Collapsed" 
+			           Height="Auto"
+			           HorizontalAlignment="Center"
+			>
+
+
+				<!--_____________________________________________-->
+				<!--___________Add New Tab Group Stuff___________-->
+				<!--_____________________________________________-->
+				<Button Click="AddNewGroup"
+					Style="{StaticResource OptionsButtonDefault}"
+					
+					>
+					<TextBlock Text="Add Tab Group" TextWrapping="Wrap" TextAlignment="Center"/>
+				</Button>
+
+				<Popup Name="InputPopup" Placement="RelativePoint" Width="200" Height="100" IsOpen="False">
+					<Border BorderBrush="Black" BorderThickness="1" Background="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}">
+						<StackPanel Margin="10">
+							<TextBlock Text="Enter a string:"/>
+							<TextBox Name="InputTextBox"/>
+							<Button Content="Submit" Margin="0,10,0,0" Click="SubmitPopup_Click"/>
+						</StackPanel>
+					</Border>
+				</Popup>
+
+				<!--____________________________________________-->
+				<!--_____________Refresh All Button_____________-->
+				<!--____________________________________________-->
+				<Button
+					Click="RefreshAll"
+					Style="{StaticResource OptionsButtonDefault}">
+
+					<TextBlock Text="Refresh All" TextWrapping="Wrap" TextAlignment="Center"/>
+				</Button>
+
+				<!--____________________________________________-->
+				<!--__________________Save All__________________-->
+				<!--____________________________________________-->
+				<Button Click="SaveAll_Clicked" 
+					Style="{StaticResource OptionsButtonDefault}">
+					<TextBlock Text="Save All" TextWrapping="Wrap" TextAlignment="Center"/>
+				</Button>
+
+				<!--____________________________________________-->
+				<!--____________________Load____________________-->
+				<!--____________________________________________-->
+				<Button Click="LoadAll_Clicked" 
+					Style="{StaticResource OptionsButtonDefault}">
+
+					<TextBlock Text="Load All" TextWrapping="Wrap" TextAlignment="Center"/>
+				</Button>
+
+				<!--____________________________________________-->
+				<!--___________________Export___________________-->
+				<!--____________________________________________-->
+				<Button Click="Export_Clicked" 
+					Style="{StaticResource OptionsButtonDefault}">
+					<TextBlock Text="Export" TextWrapping="Wrap" TextAlignment="Center"/>
+				</Button>
+
+				<!--____________________________________________-->
+				<!--___________________Import___________________-->
+				<!--____________________________________________-->
+				<Button Click="Import_Clicked" 
+					Style="{StaticResource OptionsButtonDefault}">
+
+					<TextBlock Text="Import" TextWrapping="Wrap" TextAlignment="Center"/>
+				</Button>
+
+
+			</WrapPanel>
+		</ScrollViewer>
+
+		<Button x:Name="OpenCloseButton" 
+				Click="ToggleImageButton_Click" 
+				Style="{StaticResource ArrowButtonStyle}"
+				MaxHeight="20"
+				>
+
+			<Image x:Name="OpenCloseButtonImage" 
+				   Source="/Resources/ChevronDown.png" 
+				   Stretch="Uniform" 
+				   Height="18" 
+				   HorizontalAlignment="Center" 
+				   
+				   
+				   />
+
+
+		</Button>
+	</StackPanel>
+</UserControl>
