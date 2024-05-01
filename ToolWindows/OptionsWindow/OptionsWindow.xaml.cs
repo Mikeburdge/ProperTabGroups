@@ -1,19 +1,11 @@
 ﻿using ProperTabGroups.Subsystem;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using ProperTabGroups.Subsystems;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Microsoft.Win32;
+using Microsoft.Internal.VisualStudio.PlatformUI;
+using Microsoft.WindowsAPICodePack.Dialogs;
+using MessageBox = System.Windows.Forms.MessageBox;
 
 namespace ProperTabGroups.ToolWindows.OptionsWindow
 {
@@ -78,22 +70,51 @@ namespace ProperTabGroups.ToolWindows.OptionsWindow
 
         private void SaveAll_Clicked(object sender, RoutedEventArgs e)
         {
-
+            SaveLoadManager.Instance.SaveTabGroups();
         }
 
         private void LoadAll_Clicked(object sender, RoutedEventArgs e)
         {
-
+            DocumentWellManagementSubsystem.Instance.LoadAllIntoDocumentWell();
         }
 
         private void Export_Clicked(object sender, RoutedEventArgs e)
         {
+            string path = OpenSaveFileDialog();
 
+            if (!string.IsNullOrEmpty(path))
+            {
+                SaveLoadManager.Instance.SaveTabGroups(path);
+            }
         }
-
         private void Import_Clicked(object sender, RoutedEventArgs e)
         {
+            string path = SelectJsonFilePath();
+            DocumentWellManagementSubsystem.Instance.LoadAllIntoDocumentWell(path);
+        }
 
+        private static string SelectJsonFilePath()
+        {
+            // Create a new instance of CommonOpenFileDialog
+            using CommonOpenFileDialog dialog = new CommonOpenFileDialog();
+            dialog.Title = "Select a JSON File";
+            dialog.Filters.Add(new CommonFileDialogFilter("Settings Files", "*.json"));
+            dialog.EnsureFileExists = true;  // Ensure the file must exist
+
+            return dialog.ShowDialog() == CommonFileDialogResult.Ok ? dialog.FileName : null;
+        }
+        private static string OpenSaveFileDialog()
+        {
+            using (var dialog = new CommonSaveFileDialog())
+            {
+                dialog.Title = "Save Tab Groups";
+                dialog.DefaultFileName = "TabGroups";  // Default file name
+                dialog.DefaultExtension = "json";  // Default file extension
+                dialog.Filters.Add(new CommonFileDialogFilter("JSON Files", "*.json"));
+                dialog.AlwaysAppendDefaultExtension = true;  // Ensure .json is always appended
+
+                return dialog.ShowDialog() == CommonFileDialogResult.Ok ? dialog.FileName : null;
+            }
         }
     }
 }
