@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vsShell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
              xmlns:tabGroupScripts="clr-namespace:ProperTabGroups.TabGroupScripts"
+             xmlns:local="clr-namespace:ProperTabGroups.ToolWindows.SearchBar"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300"
              d:Background="White"
@@ -203,7 +204,11 @@
         <!--____________________________________________-->
         <Button Content="Refresh All" Click="RefreshAll"/>
 
-        <!--_____________________________________________-->
+
+            <local:SearchBarControl/>
+
+
+            <!--_____________________________________________-->
         <!--_____________Tab Group List View_____________-->
         <!--_____________________________________________-->
         <ListView x:Name="TabGroupsListView"
