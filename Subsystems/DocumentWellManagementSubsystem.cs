@@ -168,9 +168,9 @@ namespace ProperTabGroups.Subsystem
             _dte.Events.WindowEvents.WindowActivated += WindowActivated;
         }
         public void LoadAllIntoDocumentWell(string pathToUse = "")
-            {
-                // Load the initial state of TabGroups from a persisted state
-                List<TabGroup> tabGroups = new();
+        {
+            // Load the initial state of TabGroups from a persisted state
+            List<TabGroup> tabGroups = new();
             List<TabInfo> tabInfos = new();
 
             if (pathToUse == string.Empty)
@@ -191,7 +191,7 @@ namespace ProperTabGroups.Subsystem
             // Clear existing tab information and document well sources
             AllTabInfos.Clear();
             GroupsDocumentWellSource.Clear();
-            
+
             // Repopulate groups from the loaded state
             foreach (TabGroup tabGroup in tabGroups)
             {
@@ -405,7 +405,7 @@ namespace ProperTabGroups.Subsystem
                 }
             }
 
-            SelectOnlyOneTab(tabInfo);
+            tabInfo.IsSelected =  false;
 
             // Process the TabInfo based on its current group assignment
             if (UnassignedTabsGroupSource.Contains(tabInfo))
