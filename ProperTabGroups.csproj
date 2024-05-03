@@ -58,9 +58,6 @@
     <Compile Include="Subsystems\SaveLoadManager.cs" />
     <Compile Include="Subsystems\SolutionEventsListener.cs" />
     <Compile Include="TabGroupScripts\TabInfo.cs" />
-    <Compile Include="ToolWindows\SearchBar\SearchBarControl.xaml.cs">
-      <DependentUpon>SearchBarControl.xaml</DependentUpon>
-    </Compile>
     <Compile Include="VSCommandTable.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -97,10 +94,6 @@
     <Compile Include="ToolWindows\ProperTabGroupsWindowControl.xaml.cs">
       <DependentUpon>ProperTabGroupsWindowControl.xaml</DependentUpon>
     </Compile>
-    <Page Include="ToolWindows\SearchBar\SearchBarControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

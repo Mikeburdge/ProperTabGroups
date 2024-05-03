@@ -217,5 +217,10 @@ namespace ProperTabGroups
 
             tabInfo.Filters.Clear();
         }
+
+        private void searchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ViewModel.SearchTextBoxText = searchTextBox.Text;
+        }
     }
 }

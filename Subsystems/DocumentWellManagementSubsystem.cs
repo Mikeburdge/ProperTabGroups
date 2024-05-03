@@ -107,6 +107,7 @@ namespace ProperTabGroups.Subsystem
 
         public ProperTabGroupsWindowControl ProperTabGroupWindowControlRef { get; set; }
 
+        public string SearchTextBoxText { get; set; }
 
         private DocumentWellManagementSubsystem()
         {
@@ -786,20 +787,17 @@ namespace ProperTabGroups.Subsystem
                 }
             }
         }
-
-        public string SearchBoxText;
-
         private bool SearchBoxFilter(object item)
         {
-            if (string.IsNullOrEmpty(SearchBoxText))
+            if (string.IsNullOrEmpty(SearchTextBoxText))
                 return true;  // Show all items if the search box is empty.
 
-            var tabInfo = item as TabInfo;
+            TabInfo tabInfo = item as TabInfo;
             if (tabInfo == null)
                 return false;  // If the item isn't a TabInfo, exclude it from the results.
 
             // Case-insensitive check if WindowName contains the SearchBoxText
-            return tabInfo.WindowName.IndexOf(SearchBoxText, StringComparison.OrdinalIgnoreCase) >= 0;
+            return tabInfo.WindowName.IndexOf(SearchTextBoxText, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
 
