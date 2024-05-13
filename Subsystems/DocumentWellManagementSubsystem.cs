@@ -23,6 +23,7 @@ using Microsoft.Internal.VisualStudio.Shell;
 using System.Windows.Documents;
 using System.Windows.Media;
 using Community.VisualStudio.Toolkit;
+using CollectionViewSource = System.Windows.Data.CollectionViewSource;
 
 namespace ProperTabGroups.Subsystem
 {
@@ -104,10 +105,23 @@ namespace ProperTabGroups.Subsystem
         }
 
         public readonly List<TabInfo> AllTabInfos;
+        private string _searchTextBoxText;
 
         public ProperTabGroupsWindowControl ProperTabGroupWindowControlRef { get; set; }
 
-        public string SearchTextBoxText { get; set; }
+        public string SearchTextBoxText
+        {
+            get => _searchTextBoxText;
+            set
+            {
+                if (value == _searchTextBoxText) return;
+                _searchTextBoxText = value;
+                OnPropertyChanged();
+
+                RefreshUnassignedGroupsListView();
+                RefreshAllTabsView();
+            }
+        }
 
         private DocumentWellManagementSubsystem()
         {
@@ -140,18 +154,20 @@ namespace ProperTabGroups.Subsystem
             GroupsDocumentWell.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name), ListSortDirection.Ascending));
             GroupsDocumentWell.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name)));
 
-            ICollectionView GroupDocumentWellView = CollectionViewSource.GetDefaultView(GroupsDocumentWellSource);
 
-            GroupDocumentWellView.Refresh();
+            GroupsDocumentWell.View.Refresh();
 
             UnassignedTabsGroup.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name), ListSortDirection.Ascending));
             UnassignedTabsGroup.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name)));
 
-            ICollectionView UnassignedTabsGroupView = CollectionViewSource.GetDefaultView(UnassignedTabsGroupSource);
-            UnassignedTabsGroupView.Refresh();
+            UnassignedTabsGroup.View.Refresh();
 
+            foreach (TabGroup tabGroup in GroupsDocumentWellSource)
+            {
+                tabGroup.TabsInGroup.View.Filter = SearchBoxFilter;
+            }
 
-            UnassignedTabsGroupView.Filter = SearchBoxFilter;
+            UnassignedTabsGroup.View.Filter = SearchBoxFilter;
         }
 
         private void Initialise()
@@ -461,19 +477,19 @@ namespace ProperTabGroups.Subsystem
         private static void RefreshUnassignedGroupsListView()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            CollectionViewSource.GetDefaultView(Instance.UnassignedTabsGroupSource).Refresh();
+            Instance.UnassignedTabsGroup.View.Refresh();
         }
 
         private static void RefreshAllGroupsView()
         {
-            CollectionViewSource.GetDefaultView(Instance.GroupsDocumentWellSource).Refresh();
+            Instance.GroupsDocumentWell.View.Refresh();
         }
 
         public static void RefreshAllTabsView()
         {
             foreach (TabGroup tabGroup in Instance.GroupsDocumentWellSource)
             {
-                CollectionViewSource.GetDefaultView(tabGroup.TabsInGroupSource).Refresh();
+                tabGroup.TabsInGroup.View.Refresh();
             }
         }
         public void RealignTabsToFilteredGroups()
