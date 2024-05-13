@@ -183,13 +183,32 @@ namespace ProperTabGroups.Subsystem
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            // Load the initial state of TabGroups from a persisted state
-            List<TabGroup> tabGroups = new();
+            LoadAllIntoDocumentWell();
+
+            // Subscribe to window creation and closing events to manage tabs dynamically
+            _dte.Events.WindowEvents.WindowCreated += WindowCreated;
+            _dte.Events.WindowEvents.WindowClosing += WindowClosing;
+            _dte.Events.WindowEvents.WindowActivated += WindowActivated;
+        }
+        public void LoadAllIntoDocumentWell(string pathToUse = "")
+            {
+                // Load the initial state of TabGroups from a persisted state
+                List<TabGroup> tabGroups = new();
             List<TabInfo> tabInfos = new();
 
-            if (!SaveLoadManager.Instance.LoadTabGroupsFromJson(ref tabGroups, ref tabInfos))
+            if (pathToUse == string.Empty)
             {
-                Debug.WriteLine("FAILED TO LOAD GROUPS AND TABS");
+                if (!SaveLoadManager.Instance.LoadTabGroupsFromJson(ref tabGroups, ref tabInfos))
+                {
+                    Debug.WriteLine("FAILED TO LOAD GROUPS AND TABS");
+                }
+            }
+            else
+            {
+                if (!SaveLoadManager.Instance.LoadTabGroupsFromJson(ref tabGroups, ref tabInfos, pathToUse))
+                {
+                    Debug.WriteLine("FAILED TO LOAD GROUPS AND TABS");
+                }
             }
 
             // Clear existing tabInfo information and document well sources
@@ -220,11 +239,6 @@ namespace ProperTabGroups.Subsystem
 
             // After initializing all tabs, realign them to their respective filtered groups
             RealignTabsToFilteredGroups();
-
-            // Subscribe to window creation and closing events to manage tabs dynamically
-            _dte.Events.WindowEvents.WindowCreated += WindowCreated;
-            _dte.Events.WindowEvents.WindowClosing += WindowClosing;
-            _dte.Events.WindowEvents.WindowActivated += WindowActivated;
         }
 
         private void WindowActivated(Window gotFocus, Window lostFocus)

@@ -5,8 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vsShell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
              xmlns:tabGroupScripts="clr-namespace:ProperTabGroups.TabGroupScripts"
-             xmlns:uwpControls="Windows.UI.Xaml.Controls"
-
+             xmlns:local="clr-namespace:ProperTabGroups.ToolWindows.OptionsWindow"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300"
              d:Background="White"
@@ -120,7 +119,7 @@
         <!--____________TabGroup Context Menu____________-->
         <!--_____________________________________________-->
         <ContextMenu x:Key="TabGroupContextMenu">
-            <MenuItem Header="Rename" />
+            <MenuItem Header="Rename" ></MenuItem>
             <MenuItem Header="Delete Group" Click="DeleteGroup_OnClick" />
         </ContextMenu>
 
@@ -128,8 +127,8 @@
         <!--____________TabGroup Context Menu____________-->
         <!--_____________________________________________-->
         <ContextMenu x:Key="TabInfoContextMenu">
-            <MenuItem Header="Modify filters" Click="ModifyFilters_OnClick" />
-            <MenuItem Header="Clear filters" Click="ClearFilters_OnClick" />
+            <MenuItem Header="Modify filters" Click="ModifyFilters_OnClick"></MenuItem>
+            <MenuItem Header="Clear filters" Click="ClearFilters_OnClick"></MenuItem>
         </ContextMenu>
 
         <!--_____________________________________________-->
@@ -184,94 +183,74 @@
     <!--___________Start of Vertical Stack___________-->
     <!--_____________________________________________-->
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Orientation="Vertical">
-
-            <!--_____________________________________________-->
-            <!--___________Add New Tab Group Stuff___________-->
-            <!--_____________________________________________-->
-            <Button Content="Add Tab Group" Click="AddNewGroup"/>
-            <Popup Name="InputPopup" Placement="RelativePoint" Width="200" Height="100" IsOpen="False">
-                <Border BorderBrush="Black" BorderThickness="1" Background="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}">
-                    <StackPanel Margin="10">
-                        <TextBlock Text="Enter a string:"/>
-                        <TextBox Name="InputTextBox"/>
-                        <Button Content="Submit" Margin="0,10,0,0" Click="SubmitPopup_Click"/>
-                    </StackPanel>
-                </Border>
-            </Popup>
-
-            <!--____________________________________________-->
-            <!--_____________Refresh All Button_____________-->
-            <!--____________________________________________-->
-            <Button Content="Refresh All" Click="RefreshAll"/>
+    <StackPanel Orientation="Vertical">
 
 
-            <!--____________________________________________-->
-            <!--_________________Search Bar_________________-->
-            <!--____________________________________________-->
-
-            <TextBox x:Name="searchTextBox"
-                 HorizontalAlignment="Stretch"
-                 VerticalAlignment="Center"
-		 
-                 TextChanged="searchTextBox_TextChanged"
-        />
 
 
-            <!--_____________________________________________-->
-            <!--_____________Tab Group List View_____________-->
-            <!--_____________________________________________-->
-            <ListView x:Name="TabGroupsListView"
+        <!--______________________________________________-->
+        <!--________________Options Window________________-->
+        <!--______________________________________________-->
+        <local:OptionsWindow/>
+
+
+
+
+
+        <!--_____________________________________________-->
+        <!--_____________Tab Group List View_____________-->
+        <!--_____________________________________________-->
+        <ListView x:Name="TabGroupsListView"
                   Margin="0,0,0,0"
                   d:ItemsSource="{d:SampleData ItemCount=2}" 
                   ItemsSource="{Binding GroupsDocumentWell.View}"
                   ItemContainerStyle="{StaticResource TabGroupListItem}">
 
-                <!--_____________________________________________-->
-                <!--________Tab Group Higher Level Header________-->
-                <!--_____________________________________________-->
-                <ListView.GroupStyle>
-                    <GroupStyle>
-                        <GroupStyle.HeaderTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Margin="0,0,5,0" ContextMenu="{StaticResource TabGroupContextMenu}"/>
-                                    <!--<TextBlock Text="{Binding ItemCount}" FontSize="12" Foreground="Gray"/>-->
-                                </StackPanel>
-                            </DataTemplate>
-                        </GroupStyle.HeaderTemplate>
-                    </GroupStyle>
-                </ListView.GroupStyle>
+            <!--_____________________________________________-->
+            <!--________Tab Group Higher Level Header________-->
+            <!--_____________________________________________-->
+            <ListView.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Margin="0,0,5,0" ContextMenu="{StaticResource TabGroupContextMenu}"/>
+                                <!--<TextBlock Text="{Binding ItemCount}" FontSize="12" Foreground="Gray"/>-->
+                            </StackPanel>
+                        </DataTemplate>
+                    </GroupStyle.HeaderTemplate>
+                </GroupStyle>
+            </ListView.GroupStyle>
 
-                <!--____________________________________________-->
-                <!--________Tab Group Higher Level Items________-->
-                <!--____________________________________________-->
-                <ListView.ItemTemplate>
-                    <DataTemplate DataType="{x:Type tabGroupScripts:TabGroup}">
-                        <ListView x:Name="ItemContainerList"
+            <!--____________________________________________-->
+            <!--________Tab Group Higher Level Items________-->
+            <!--____________________________________________-->
+            <ListView.ItemTemplate>
+                <DataTemplate DataType="{x:Type tabGroupScripts:TabGroup}">
+                    <ListView x:Name="ItemContainerList"
                               ItemsSource="{Binding TabsInGroup.View}"
                               SelectionChanged="ListView_SelectionChanged" 
                               MouseDoubleClick="ModifyFilters_OnClick"
                               ItemContainerStyle="{StaticResource TabInfoListViewStyle}">
 
-                            <!--_______________________________________________-->
-                            <!--__________Tab Info List View Contents__________-->
-                            <!--_______________________________________________-->
-                            <ListView.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding WindowName}" />
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                        <!--_______________________________________________-->
+                        <!--__________Tab Info List View Contents__________-->
+                        <!--_______________________________________________-->
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding WindowName}" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
 
-            <!--_______________________________________________-->
-            <!--___________Unassigned Tabs List View___________-->
-            <!--_______________________________________________-->
-            <!--Visibility="{Binding IsUnassignedListBoxVisible, Converter={StaticResource BoolToVis}}"-->
-            <ListView x:Name="UnassignedTabsListView" 
+        <!--_______________________________________________-->
+        <!--___________Unassigned Tabs List View___________-->
+        <!--_______________________________________________-->
+        <!--Visibility="{Binding IsUnassignedListBoxVisible, Converter={StaticResource BoolToVis}}"-->
+        <ListView x:Name="UnassignedTabsListView" 
                   Margin="0,0,0,0" 
                   d:ItemsSource="{d:SampleData ItemCount=2}" 
                   ItemsSource="{Binding UnassignedTabsGroup.View}" 
@@ -279,31 +258,31 @@
                   SelectionChanged="ListView_SelectionChanged" 
                   MouseDoubleClick="ModifyFilters_OnClick">
 
-                <!--____________________________________________-->
-                <!--___________Unassigned Tabs Header___________-->
-                <!--____________________________________________-->
-                <ListView.GroupStyle>
-                    <GroupStyle>
-                        <GroupStyle.HeaderTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="Unassigned Groups" FontWeight="Bold" FontSize="14" Margin="0,0,5,0"/>
-                                    <!-- {Binding UnassignedTabsGroupName} -->
-                                </StackPanel>
-                            </DataTemplate>
-                        </GroupStyle.HeaderTemplate>
-                    </GroupStyle>
-                </ListView.GroupStyle>
+            <!--____________________________________________-->
+            <!--___________Unassigned Tabs Header___________-->
+            <!--____________________________________________-->
+            <ListView.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Unassigned Groups" FontWeight="Bold" FontSize="14" Margin="0,0,5,0"/>
+                                <!-- {Binding UnassignedTabsGroupName} -->
+                            </StackPanel>
+                        </DataTemplate>
+                    </GroupStyle.HeaderTemplate>
+                </GroupStyle>
+            </ListView.GroupStyle>
 
-                <!--____________________________________________-->
-                <!--__________Unassigned Tabs Contents__________-->
-                <!--____________________________________________-->
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding WindowName}" />
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
-        </StackPanel>
+            <!--____________________________________________-->
+            <!--__________Unassigned Tabs Contents__________-->
+            <!--____________________________________________-->
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding WindowName}" />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </StackPanel>
     </ScrollViewer>
 </UserControl>

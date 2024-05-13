@@ -58,6 +58,9 @@
     <Compile Include="Subsystems\SaveLoadManager.cs" />
     <Compile Include="Subsystems\SolutionEventsListener.cs" />
     <Compile Include="TabGroupScripts\TabInfo.cs" />
+    <Compile Include="ToolWindows\OptionsWindow\OptionsWindow.xaml.cs">
+      <DependentUpon>OptionsWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="VSCommandTable.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -70,6 +73,8 @@
       <Generator>VsixManifestGenerator</Generator>
       <LastGenOutput>source.extension.cs</LastGenOutput>
     </None>
+    <Content Include="Resources\ChevronDown.png" />
+    <Content Include="Resources\ChevronUp.png" />
     <Content Include="Resources\Icon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -87,6 +92,10 @@
     <Page Include="DualListSelector\DualListboxSelectorWindowControl.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="ToolWindows\OptionsWindow\OptionsWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="ToolWindows\ProperTabGroupsWindowControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -98,6 +107,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Design" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -113,9 +123,17 @@
     <PackageReference Include="Microsoft.Bcl.HashCode">
       <Version>1.1.1</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies">
+      <Version>1.0.3</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.9.3184">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="WindowsAPICodePack-Shell">
+      <Version>1.1.1</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup />
