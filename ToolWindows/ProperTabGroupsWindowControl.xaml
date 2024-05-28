@@ -196,14 +196,29 @@
         <!--______________________________________________-->
         <!--__________________Search Box__________________-->
         <!--______________________________________________-->
-            <TextBox x:Name="searchTextBox"
-                 HorizontalAlignment="Stretch"
-                 VerticalAlignment="Center"
-		 
-                 TextChanged="searchTextBox_TextChanged"
-        />
 
+            <Grid>
+                <TextBox x:Name="searchTextBox"
+                     HorizontalAlignment="Stretch"
+                     VerticalAlignment="Center"
+                     Margin="5"
+                     Background="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"
+                     BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                     BorderThickness="1"
+                     Padding="5"
+                     Text="Search..." Foreground="Gray"
+                     TextChanged="searchTextBox_TextChanged"
+                     KeyDown="SearchTextBox_OnKeyDown"
 
+                     GotFocus="SearchTextBox_OnGotFocus"
+                     LostFocus="SearchTextBox_OnLostFocus"
+            />
+
+                <Button Content="X" Width="27" Height="27"
+                    HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0"
+                    Click="ButtonBase_OnClick"
+                    />
+            </Grid>
             <!--_____________________________________________-->
         <!--_____________Tab Group List View_____________-->
         <!--_____________________________________________-->

@@ -199,5 +199,39 @@ namespace ProperTabGroups
         {
             ViewModel.SearchTextBoxText = searchTextBox.Text;
         }
+
+        private void SearchTextBox_OnGotFocus(object sender, RoutedEventArgs e)
+        {
+            searchTextBox.Foreground = Brushes.Black;
+            if (searchTextBox.Text == "Search...")
+            {
+                searchTextBox.Text = "";
+            }
+        }
+
+        private async void SearchTextBox_OnLostFocus(object sender, RoutedEventArgs e)
+        {
+            await Task.Delay(100);
+            if (string.IsNullOrWhiteSpace(searchTextBox.Text))
+            {
+                searchTextBox.Foreground = Brushes.Gray;
+                searchTextBox.Text = "Search...";
+            }
+        }
+
+        private void SearchTextBox_OnKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                searchTextBox.Clear();
+            }
+        }
+
+        private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
+        {
+            searchTextBox.Clear();
+            searchTextBox.Foreground = Brushes.Gray;
+            searchTextBox.Text = "Search...";
+        }
     }
 }

@@ -822,7 +822,8 @@ namespace ProperTabGroups.Subsystem
         }
         public bool SearchBoxFilter(object item)
         {
-            if (string.IsNullOrEmpty(SearchTextBoxText))
+            if (string.IsNullOrEmpty(SearchTextBoxText) ||
+                SearchTextBoxText == "Search...")
                 return true;  // Show all items if the search box is empty.
 
             TabInfo tabInfo = item as TabInfo;
