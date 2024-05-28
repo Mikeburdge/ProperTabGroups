@@ -65,7 +65,7 @@ namespace ProperTabGroups.ToolWindows.OptionsWindow
 
         private void RefreshAll(object sender, RoutedEventArgs e)
         {
-            DocumentWellManagementSubsystem.RefreshAll();
+            DocumentWellManagementSubsystem.Instance.RefreshAll();
         }
 
         private void SaveAll_Clicked(object sender, RoutedEventArgs e)

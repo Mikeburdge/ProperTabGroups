@@ -139,12 +139,13 @@ namespace ProperTabGroups.Subsystems
                                 ColourCode = serializableTabGroup.ColourCode
                             };
 
+                            tabGroup.TabsInGroup.View.Filter = DocumentWellManagementSubsystem.Instance.SearchBoxFilter;
+
                             tabGroups.Add(tabGroup);
                         }
                     }
 
                     List<Window> allActiveDocuments = _dte.Windows.Cast<Window>().Where(window => window.Kind is "Document").ToList();
-
 
                     foreach (SerializableTabInfo serializableTabInfo in serializableTabInfos)
                     {

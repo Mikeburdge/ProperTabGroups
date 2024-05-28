@@ -79,7 +79,7 @@ namespace ProperTabGroups.TabGroupScripts
                 Source = TabsInGroupSource
             };
 
-            TabsInGroup.SortDescriptions.Add(new SortDescription(nameof(TabInfo.WindowName), ListSortDirection.Ascending));
+            TabsInGroup.View.SortDescriptions.Add(new SortDescription(nameof(TabInfo.WindowName), ListSortDirection.Ascending));
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -90,8 +90,7 @@ namespace ProperTabGroups.TabGroupScripts
         }
         private void TabsInGroupSource_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            DocumentWellManagementSubsystem.RefreshAllTabsView();
-            //Application.Current.Dispatcher.BeginInvoke(new Action(DocumentWellManagementSubsystem.RefreshAllTabsView), DispatcherPriority.Background);
+            DocumentWellManagementSubsystem.Instance.RefreshAll();
         }
     }
 

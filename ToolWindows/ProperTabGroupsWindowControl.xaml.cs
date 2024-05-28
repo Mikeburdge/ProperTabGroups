@@ -15,6 +15,7 @@ using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
 using Window = EnvDTE.Window;
 using System.Windows.Data;
 using System.Diagnostics;
+using Microsoft.VisualStudio.PlatformUI;
 
 namespace ProperTabGroups
 {
@@ -183,12 +184,6 @@ namespace ProperTabGroups
                 System.Diagnostics.Debug.WriteLine($"DataContext is not a CollectionViewGroup.");
             }
 
-            // Rest of your method...
-        }
-
-        private void RefreshAll(object sender, RoutedEventArgs e)
-        {
-            DocumentWellManagementSubsystem.RefreshAll();
         }
 
         private void ClearFilters_OnClick(object sender, RoutedEventArgs e)

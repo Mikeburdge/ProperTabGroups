@@ -66,7 +66,7 @@ namespace ProperTabGroups.Subsystem
         }
         private void OnGroupsDocumentWellSourceChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
         {
-            RefreshAllGroupsView();
+            RefreshGroupsView();
         }
 
         public bool IsUnassignedListBoxVisible = true;
@@ -100,8 +100,8 @@ namespace ProperTabGroups.Subsystem
         private void OnUnassignedTabsSourceChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
         {
             //IsUnassignedListBoxVisible = UnassignedTabsGroupSource.Any();
-
-            RefreshUnassignedGroupsListView();
+            
+            RefreshAll();
         }
 
         public readonly List<TabInfo> AllTabInfos;
@@ -147,20 +147,19 @@ namespace ProperTabGroups.Subsystem
         }
 
 
-        private void HandleGroupFunctionality()
+        private void ConfigureGroupFunctionality()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
             GroupsDocumentWell.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name), ListSortDirection.Ascending));
             GroupsDocumentWell.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name)));
 
-
-            GroupsDocumentWell.View.Refresh();
+            RefreshGroupsView();
 
             UnassignedTabsGroup.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name), ListSortDirection.Ascending));
             UnassignedTabsGroup.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name)));
 
-            UnassignedTabsGroup.View.Refresh();
+            RefreshUnassignedGroupsListView();
 
             foreach (TabGroup tabGroup in GroupsDocumentWellSource)
             {
@@ -175,7 +174,7 @@ namespace ProperTabGroups.Subsystem
             ThreadHelper.ThrowIfNotOnUIThread();
             // Initialize Tab Groups based on the current state of the IDE
 
-            HandleGroupFunctionality();
+            ConfigureGroupFunctionality();
             _dte.Events.SolutionEvents.Opened += SolutionOpened;
 
         }
@@ -481,25 +480,25 @@ namespace ProperTabGroups.Subsystem
             Debug.WriteLine($"Cleanup performed for TabInfo: {tabInfo.WindowName}");
         }
 
-        public static void RefreshAll()
+        public void RefreshAll()
         {
             RefreshUnassignedGroupsListView();
-            RefreshAllGroupsView();
+            RefreshGroupsView();
             RefreshAllTabsView();
         }
 
-        private static void RefreshUnassignedGroupsListView()
+        public void RefreshUnassignedGroupsListView()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            Instance.UnassignedTabsGroup.View.Refresh();
+            UnassignedTabsGroup.View.Refresh();
         }
 
-        private static void RefreshAllGroupsView()
+        public void RefreshGroupsView()
         {
-            Instance.GroupsDocumentWell.View.Refresh();
+            GroupsDocumentWell.View.Refresh();
         }
 
-        public static void RefreshAllTabsView()
+        public void RefreshAllTabsView()
         {
             foreach (TabGroup tabGroup in Instance.GroupsDocumentWellSource)
             {
@@ -561,6 +560,8 @@ namespace ProperTabGroups.Subsystem
                     }
                 }
             }
+
+            RefreshAll();
         }
 
         private void ValidateCurrentGroups()
@@ -658,6 +659,8 @@ namespace ProperTabGroups.Subsystem
         {
             // Logic to create a new tabInfo group
             TabGroup newTabGroup = new(name: groupName, bIsLocked: isLocked);
+
+            newTabGroup.TabsInGroup.View.Filter = SearchBoxFilter;
 
             // Add to ObservableCollection
             GroupsDocumentWellSource.Add(newTabGroup);
@@ -817,7 +820,7 @@ namespace ProperTabGroups.Subsystem
                 }
             }
         }
-        private bool SearchBoxFilter(object item)
+        public bool SearchBoxFilter(object item)
         {
             if (string.IsNullOrEmpty(SearchTextBoxText))
                 return true;  // Show all items if the search box is empty.
