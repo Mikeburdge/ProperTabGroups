@@ -38,7 +38,7 @@ namespace ProperTabGroups.Subsystem
         // Beginning to be Deprecated
         public static Guid UnassignedTabsGroupGuid = new("8CF0C899-378A-4B58-ADD5-4B9C211B6CDF"); //Guid.NewGuid();
         public static Guid ClosedFileGuid = new("045ca0af-b76a-4222-9958-12a287a26e68");
-        ICollectionView GroupsDocumentWellView;
+
         public CollectionViewSource GroupsDocumentWell { get; set; }
         private ObservableCollection<TabGroup> _groupsDocumentWellSource;
         public ObservableCollection<TabGroup> GroupsDocumentWellSource
@@ -820,6 +820,9 @@ namespace ProperTabGroups.Subsystem
                 }
             }
         }
+
+
+
         public bool SearchBoxFilter(object item)
         {
             if (string.IsNullOrEmpty(SearchTextBoxText) ||
@@ -834,6 +837,10 @@ namespace ProperTabGroups.Subsystem
             return tabInfo.WindowName.IndexOf(SearchTextBoxText, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        public bool HideAllFilter(object item)
+        {
+            return false;
+        }
 
         public void SetIfTabIsSelected(TabInfo tabToModify, bool shouldBeSelected)
         {

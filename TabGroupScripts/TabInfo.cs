@@ -61,7 +61,7 @@ namespace ProperTabGroups.TabGroupScripts
         public bool BIsLocked { get; set; }
         public bool BIsVisible { get; set; }
         public string ColourCode { get; set; }
-        public int ItemCount => TabsInGroupSource.Count;
+        public int ItemCount { get; set; }
 
         //////////////////////////////////////////
         // Constructor
@@ -90,6 +90,7 @@ namespace ProperTabGroups.TabGroupScripts
         }
         private void TabsInGroupSource_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            ItemCount = TabsInGroupSource.Count;
             DocumentWellManagementSubsystem.Instance.RefreshAll();
         }
     }

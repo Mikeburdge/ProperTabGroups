@@ -31,6 +31,7 @@ namespace ProperTabGroups
             
             // its a bit scuffed but this order initialises the SaveLoadManager first and then the document well stuff accesses it after
             var init2 = new SolutionEventsListener();
+            var init3 = new SaveLoadManager();
             var init = DocumentWellManagementSubsystem.Instance;
         }
     }

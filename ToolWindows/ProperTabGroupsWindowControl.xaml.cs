@@ -42,7 +42,6 @@ namespace ProperTabGroups
             _dte.Events.SolutionEvents.Opened += SolutionOpened;
 
             ViewModel.ProperTabGroupWindowControlRef = this;
-
         }
 
         private void SolutionOpened()

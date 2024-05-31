@@ -103,6 +103,10 @@ namespace ProperTabGroups.Subsystems
 
         public bool LoadTabGroupsFromJson(ref List<TabGroup> outTabGroups, ref List<TabInfo> outTabInfos)
         {
+            if (defaultSettingsFilePath == null)
+            {
+                InitSaveLoadManager();
+            }
             return LoadTabGroupsFromJson(ref outTabGroups, ref outTabInfos, defaultSettingsFilePath);
         }
 
@@ -160,8 +164,7 @@ namespace ProperTabGroups.Subsystems
                             {
                                 //IsSelected = serializableTabInfo.IsSelected
                                 WindowName = serializableTabInfo.WindowName,
-                                Window =
-                                    null, // If this is null anyway it means that when we click to open it, it "should" open it safely
+                                Window = null, // If this is null anyway it means that when we click to open it, it "should" open it safely
                                 DocumentPath = serializableTabInfo.DocumentPath,
                                 ViewKind = serializableTabInfo.ViewKind,
                                 Filters = new ObservableCollection<Guid>(serializableTabInfo.Filters)
