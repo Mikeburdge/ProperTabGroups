@@ -123,9 +123,9 @@
             <MenuItem Header="Delete Group" Click="DeleteGroup_OnClick" />
         </ContextMenu>
 
-        <!--_____________________________________________-->
-        <!--____________TabGroup Context Menu____________-->
-        <!--_____________________________________________-->
+        <!--____________________________________________-->
+        <!--____________TabInfo Context Menu____________-->
+        <!--____________________________________________-->
         <ContextMenu x:Key="TabInfoContextMenu">
             <MenuItem Header="Modify filters" Click="ModifyFilters_OnClick"></MenuItem>
             <MenuItem Header="Clear filters" Click="ClearFilters_OnClick"></MenuItem>
@@ -138,7 +138,7 @@
 
         <!--____________________________________________-->
         <!--__________Tab Info List View Style__________-->
-        <!--___________________NOT IN USE IN CURRENT SETTING, MOVE ELSEWHERE_________________________-->
+        <!--____________________________________________-->
         <Style TargetType="ListViewItem" x:Key="TabInfoListViewStyle">
 
             <Setter Property="Padding" Value="0"/>
@@ -156,6 +156,8 @@
 
             <!-- Setting Context Menu for nested List View Items-->
             <Setter Property="ContextMenu" Value="{StaticResource TabInfoContextMenu}"/>
+
+            <EventSetter Event="MouseDoubleClick" Handler="ModifyFilters_OnClick"/>
 
             <!-- Setting the background styles -->
             <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
@@ -201,7 +203,7 @@
 
             <!-- Style stretch the clickable content to the width of the window-->
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <!--<Setter Property="VerticalContentAlignment" Value="Stretch"/>-->
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
 
             <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
             <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
@@ -247,13 +249,17 @@
         </Style>
 
         <!--_____________________________________________-->
-        <!--____________Master ListView Style____________-->
+        <!--____________TabInfo ListView Style____________-->
         <!--_____________________________________________-->
         <Style TargetType="ListView" x:Key="MasterListViewStyle" BasedOn="{StaticResource DefaultListViewStyle}">
             <Setter Property="ItemContainerStyle" Value="{StaticResource TabInfoListViewStyle}"/>
+            <EventSetter Event="SelectionChanged" Handler="ListView_SelectionChanged"/>
+            <EventSetter Event="MouseDoubleClick" Handler="ModifyFilters_OnClick"/>
         </Style>
 
     </UserControl.Resources>
+
+
     <!--________________________________________________________________________________________________________________________________________________________________-->
     <!--_____________________________________________-->
     <!--___________Start of Vertical Stack___________-->
@@ -292,23 +298,37 @@
                     />
             </Grid>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             <!--_____________________________________________-->
             <!--_____________Tab Group List View_____________-->
             <!--_____________________________________________-->
             <ListView x:Name="TabGroupsListView"
                   Style="{StaticResource DefaultListViewStyle}"
-                  d:ItemsSource="{d:SampleData ItemCount=2}" 
-                  ItemsSource="{Binding GroupsDocumentWell.View}"
-                  
-                  >
+                  d:DataContext="{d:DesignInstance Type=tabGroupScripts:TabGroup, IsDesignTimeCreatable=True}"
+                  ItemsSource="{Binding GroupsDocumentWell.View}">
 
-                <!--_____________________________________________-->
-                <!--________Tab Group Higher Level Header________-->
-                <!--_____________________________________________-->
+                <!-- GroupStyle defines the appearance of group headers -->
                 <ListView.GroupStyle>
                     <GroupStyle>
                         <GroupStyle.HeaderTemplate>
                             <DataTemplate DataType="{x:Type tabGroupScripts:TabGroup}">
+                                <!-- Header for each group -->
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" ContextMenu="{StaticResource TabGroupContextMenu}">
                                     <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Margin="0,0,5,0"/>
                                     <TextBlock Text="{Binding ItemCount}" FontSize="14" Foreground="Gray"/>
@@ -318,20 +338,16 @@
                     </GroupStyle>
                 </ListView.GroupStyle>
 
-                <!--____________________________________________-->
-                <!--________Tab Group Higher Level Items________-->
-                <!--____________________________________________-->
+                <!-- ItemTemplate defines the appearance of each item in the ListView -->
                 <ListView.ItemTemplate>
                     <DataTemplate DataType="{x:Type tabGroupScripts:TabGroup}">
-                        <ListView x:Name="ItemContainerList"
-                              ItemsSource="{Binding TabsInGroup.View}"
+                        <!-- Nested ListView within each item -->
+                        <ListView x:Name="TabInfoItemList"
                               Style="{StaticResource MasterListViewStyle}"
-                              SelectionChanged="ListView_SelectionChanged" 
-                              MouseDoubleClick="ModifyFilters_OnClick">
+                              d:ItemsSource="{d:SampleData ItemCount=2}" 
+                              ItemsSource="{Binding TabsInGroup}">
 
-                            <!--_______________________________________________-->
-                            <!--__________Tab Info List View Contents__________-->
-                            <!--_______________________________________________-->
+                            <!-- ItemTemplate for the nested ListView, showing individual tab info -->
                             <ListView.ItemTemplate>
                                 <DataTemplate DataType="{x:Type tabGroupScripts:TabInfo}">
                                     <TextBlock Text="{Binding WindowName}" />
@@ -342,13 +358,29 @@
                 </ListView.ItemTemplate>
             </ListView>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            <!--#region Unassigned Tabs ListView -->
+
+
             <!--_______________________________________________-->
             <!--___________Unassigned Tabs List View___________-->
             <!--_______________________________________________-->
             <ListView x:Name="UnassignedTabsListView" 
                   Style="{StaticResource MasterListViewStyle}"
                   ItemsSource="{Binding UnassignedTabsGroup.View}" 
-                  SelectionChanged="ListView_SelectionChanged"
                   >
 
                 <!--____________________________________________-->
@@ -363,12 +395,15 @@
                                         <ControlTemplate TargetType="{x:Type GroupItem}">
                                             <DockPanel>
                                                 <Expander Header="Unassigned Groups" 
-                                                          
                                                           Style="{StaticResource ExpanderStyle}"
-                                                          >
+                                                >
                                                     <Expander.HeaderTemplate>
                                                         <DataTemplate>
-                                                            <Grid FlowDirection="LeftToRight" HorizontalAlignment="{Binding Path=HorizontalAlignment, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ContentPresenter}}, Mode=OneWayToSource}" >
+                                                            <Grid FlowDirection="LeftToRight" 
+                                                              HorizontalAlignment="{Binding Path=HorizontalAlignment, 
+                                                                                            RelativeSource={RelativeSource FindAncestor, 
+                                                                                            AncestorType={x:Type ContentPresenter}}, 
+                                                                                            Mode=OneWayToSource}" >
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="Auto"/>
                                                                     <ColumnDefinition Width="*"/>
@@ -401,6 +436,10 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
+
+
+            <!--#endregion Unassigned Tabs ListView -->
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

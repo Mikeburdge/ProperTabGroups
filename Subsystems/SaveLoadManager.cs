@@ -44,7 +44,13 @@ namespace ProperTabGroups.Subsystems
         public void InitSaveLoadManager()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
+            string extensionFolder = GetDefaultDirectory();
 
+            defaultSettingsFilePath = Path.Combine(extensionFolder, "settings.json");
+        }
+
+        public string GetDefaultDirectory()
+        {
             string solutionName = Path.GetFileNameWithoutExtension(_dte.Solution.FullName);
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string extensionFolder = Path.Combine(appDataPath, "ProperTabGroups", solutionName);
@@ -53,7 +59,7 @@ namespace ProperTabGroups.Subsystems
                 Directory.CreateDirectory(extensionFolder);
             }
 
-            defaultSettingsFilePath = Path.Combine(extensionFolder, "settings.json");
+            return extensionFolder;
         }
 
         public void SaveTabGroups()

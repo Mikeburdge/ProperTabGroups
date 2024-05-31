@@ -90,16 +90,23 @@ namespace ProperTabGroups.ToolWindows.OptionsWindow
         private void Import_Clicked(object sender, RoutedEventArgs e)
         {
             string path = SelectJsonFilePath();
-            DocumentWellManagementSubsystem.Instance.LoadAllIntoDocumentWell(path);
+            if (!string.IsNullOrEmpty(path))
+            {
+                DocumentWellManagementSubsystem.Instance.LoadAllIntoDocumentWell(path);
+            }
         }
 
         private static string SelectJsonFilePath()
         {
+            string projectAppDataDirectory = SaveLoadManager.Instance.GetDefaultDirectory();
+
             // Create a new instance of CommonOpenFileDialog
             using CommonOpenFileDialog dialog = new CommonOpenFileDialog();
             dialog.Title = "Select a JSON File";
             dialog.Filters.Add(new CommonFileDialogFilter("Settings Files", "*.json"));
             dialog.EnsureFileExists = true;  // Ensure the file must exist
+            dialog.InitialDirectory = projectAppDataDirectory;
+
 
             return dialog.ShowDialog() == CommonFileDialogResult.Ok ? dialog.FileName : null;
         }
@@ -107,11 +114,15 @@ namespace ProperTabGroups.ToolWindows.OptionsWindow
         {
             using (var dialog = new CommonSaveFileDialog())
             {
+
+                string projectAppDataDirectory = SaveLoadManager.Instance.GetDefaultDirectory();
+
                 dialog.Title = "Save Tab Groups";
                 dialog.DefaultFileName = "TabGroups";  // Default file name
                 dialog.DefaultExtension = "json";  // Default file extension
                 dialog.Filters.Add(new CommonFileDialogFilter("JSON Files", "*.json"));
                 dialog.AlwaysAppendDefaultExtension = true;  // Ensure .json is always appended
+                dialog.InitialDirectory = projectAppDataDirectory;
 
                 return dialog.ShowDialog() == CommonFileDialogResult.Ok ? dialog.FileName : null;
             }
