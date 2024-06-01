@@ -232,10 +232,5 @@ namespace ProperTabGroups
             searchTextBox.Foreground = Brushes.Gray;
             searchTextBox.Text = "Search...";
         }
-
-        private void Expander_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-
-        }
     }
 }
