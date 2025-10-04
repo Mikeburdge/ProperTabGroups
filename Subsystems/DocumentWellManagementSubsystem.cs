@@ -76,7 +76,7 @@ namespace ProperTabGroups.Subsystem
             get => _unassignedTabsGroupSource;
             set
             {
-                if (Equals(_groupsDocumentWellSource, value)) return;
+                if (Equals(_unassignedTabsGroupSource, value)) return;
 
                 if (_unassignedTabsGroupSource != null)
                 {
@@ -151,13 +151,13 @@ namespace ProperTabGroups.Subsystem
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
+            // Sort groups by name
             GroupsDocumentWell.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name), ListSortDirection.Ascending));
-            GroupsDocumentWell.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name)));
 
             RefreshGroupsView();
 
-            UnassignedTabsGroup.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name), ListSortDirection.Ascending));
-            UnassignedTabsGroup.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TabGroup.Name)));
+            // sort by filename
+            UnassignedTabsGroup.SortDescriptions.Add(new SortDescription(nameof(TabInfo.WindowName), ListSortDirection.Ascending));
 
             RefreshUnassignedGroupsListView();
 
@@ -176,8 +176,8 @@ namespace ProperTabGroups.Subsystem
 
             ConfigureGroupFunctionality();
             _dte.Events.SolutionEvents.Opened += SolutionOpened;
-
         }
+        
         private void SolutionOpened()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -189,10 +189,11 @@ namespace ProperTabGroups.Subsystem
             _dte.Events.WindowEvents.WindowClosing += WindowClosing;
             _dte.Events.WindowEvents.WindowActivated += WindowActivated;
         }
+
         public void LoadAllIntoDocumentWell(string pathToUse = "")
-            {
-                // Load the initial state of TabGroups from a persisted state
-                List<TabGroup> tabGroups = new();
+        {
+            // Load the initial state of TabGroups from a persisted state
+            List<TabGroup> tabGroups = new();
             List<TabInfo> tabInfos = new();
 
             if (pathToUse == string.Empty)
@@ -255,13 +256,14 @@ namespace ProperTabGroups.Subsystem
         // Helper method to create a new TabInfo based on an open window
         private TabInfo CreateNewTabInfo(Window window)
         {
-            return new TabInfo(window, []);
+            return new TabInfo(window, new ObservableCollection<Guid>());
         }
 
         private bool ShouldTabBeGrouped(TabInfo tabInfo, TabGroup group)
         {
             return tabInfo.Filters.Contains(group.GroupGuid);
         }
+
         private void WindowCreated(Window newWindow)
         {
             TabInfo tabInfo = FindOrCreateTabInfo(newWindow);
@@ -324,8 +326,6 @@ namespace ProperTabGroups.Subsystem
             //    return;
             //}
             //AddUniqueTabToAllTabs(tabInfo);
-
-
         }
 
         private void HandleInvalid(TabInfo tabInfo, Window newWindow)
@@ -404,8 +404,8 @@ namespace ProperTabGroups.Subsystem
             }
 
             TabInfo tabInfoByName = GetTabInfoByName(window.Caption);
-
-            return tabInfoByName != null ? tabInfoByName : new TabInfo(window, []);
+            
+            return tabInfoByName != null ? tabInfoByName : new TabInfo(window, new ObservableCollection<Guid>());
         }
 
         private void WindowClosing(Window closingWindow)
@@ -452,6 +452,7 @@ namespace ProperTabGroups.Subsystem
             // Optionally, perform additional cleanup or state updates
             PostTabInfoRemovalCleanup(tabInfo);
         }
+
         public void SelectOnlyOneTab(TabInfo tabToModify)
         {
             foreach (TabInfo tabInfo in AllTabInfos)
@@ -505,6 +506,7 @@ namespace ProperTabGroups.Subsystem
                 tabGroup.TabsInGroup.View.Refresh();
             }
         }
+
         public void RealignTabsToFilteredGroups()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -577,24 +579,23 @@ namespace ProperTabGroups.Subsystem
                     }
                 }
             }
+
             for (int i = UnassignedTabsGroupSource.Count - 1; i >= 0; i--)
             {
                 TabInfo tab = UnassignedTabsGroupSource[i];
-                if (!tab.Filters.Contains(UnassignedTabsGroupGuid))
+                if (tab.Filters != null && tab.Filters.Count > 0)
                 {
                     UnassignedTabsGroupSource.RemoveAt(i);
                 }
-                if (tab.Filters.Contains(ClosedFileGuid))
-                {
-                    AllTabInfos.Remove(tab);
-                }
             }
         }
+
         private void AddUniqueTabToAllTabs(TabInfo tabInfo)
         {
             if (AllTabInfos.Contains(tabInfo))
             {
-                Debug.WriteLine($"ProperTabGroups ERROR: Tried adding an existing tabInfo info to AllTabs, {tabInfo.WindowName}");
+                Debug.WriteLine(
+                    $"ProperTabGroups ERROR: Tried adding an existing tabInfo info to AllTabs, {tabInfo.WindowName}");
                 return;
             }
 
@@ -605,7 +606,8 @@ namespace ProperTabGroups.Subsystem
         {
             if (tabGroup.TabsInGroupSource.Contains(tabInfo))
             {
-                Debug.WriteLine($"ProperTabGroups ERROR: Tried adding an existing tabInfo({tabInfo.WindowName}) info to group({tabGroup.Name})");
+                Debug.WriteLine(
+                    $"ProperTabGroups ERROR: Tried adding an existing tabInfo({tabInfo.WindowName}) info to group({tabGroup.Name})");
                 return;
             }
 
@@ -616,6 +618,7 @@ namespace ProperTabGroups.Subsystem
         {
             return AllTabInfos.FirstOrDefault(x => x.WindowName.Equals(inName));
         }
+
         private bool IsWindowContainedInAnyGroup(Window windowToFind)
         {
             foreach (TabGroup tabGroup in GroupsDocumentWellSource)
@@ -628,6 +631,7 @@ namespace ProperTabGroups.Subsystem
 
             return false;
         }
+
         private bool IsTabContainedInAnyGroup(TabInfo tabInfoToFind)
         {
             return GroupsDocumentWellSource.Any(tabGroup => tabGroup.TabsInGroupSource.Contains(tabInfoToFind));
@@ -666,7 +670,8 @@ namespace ProperTabGroups.Subsystem
             GroupsDocumentWellSource.Add(newTabGroup);
 
             // Use LINQ to filter out groups with empty names directly
-            List<TabGroup> groupsToRemove = GroupsDocumentWellSource.Where(group => string.IsNullOrEmpty(group.Name)).ToList();
+            List<TabGroup> groupsToRemove =
+                GroupsDocumentWellSource.Where(group => string.IsNullOrEmpty(group.Name)).ToList();
             foreach (TabGroup group in groupsToRemove)
             {
                 GroupsDocumentWellSource.Remove(group);
@@ -686,7 +691,9 @@ namespace ProperTabGroups.Subsystem
 
         public IEnumerable<string> GetAvailableTabGroupNames(TabInfo tabInfo)
         {
-            return (from @group in GroupsDocumentWellSource where !tabInfo.Filters.Contains(@group.GroupGuid) select @group.Name).ToList();
+            return (from @group in GroupsDocumentWellSource
+                where !tabInfo.Filters.Contains(@group.GroupGuid)
+                select @group.Name).ToList();
         }
 
         public IEnumerable<TabGroup> GetTabGroupsFromNames(List<string> inStrings)
@@ -724,7 +731,8 @@ namespace ProperTabGroups.Subsystem
 
         public string GetGroupNameFromGuid(Guid inGuid)
         {
-            return (from @group in GroupsDocumentWellSource where inGuid.Equals(@group.GroupGuid) select @group.Name).FirstOrDefault();
+            return (from @group in GroupsDocumentWellSource where inGuid.Equals(@group.GroupGuid) select @group.Name)
+                .FirstOrDefault();
         }
 
         public void AddFilterToTab(TabInfo tabInfo, Guid filter)
@@ -734,6 +742,7 @@ namespace ProperTabGroups.Subsystem
                 Debug.WriteLine("Tab info is null");
                 return;
             }
+
             if (tabInfo.Filters.Contains(filter)) return;
 
             tabInfo.Filters.Add(filter);
@@ -796,6 +805,7 @@ namespace ProperTabGroups.Subsystem
                 // Log the error or inform the user through a dialog, depending on your application's needs.
             }
         }
+
         public IEnumerable<ListView> GetAllListViews(DependencyObject parent)
         {
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
@@ -821,17 +831,15 @@ namespace ProperTabGroups.Subsystem
             }
         }
 
-
-
         public bool SearchBoxFilter(object item)
         {
             if (string.IsNullOrEmpty(SearchTextBoxText) ||
                 SearchTextBoxText == "Search...")
-                return true;  // Show all items if the search box is empty.
+                return true; // Show all items if the search box is empty.
 
             TabInfo tabInfo = item as TabInfo;
             if (tabInfo == null)
-                return false;  // If the item isn't a TabInfo, exclude it from the results.
+                return false; // If the item isn't a TabInfo, exclude it from the results.
 
             // Case-insensitive check if WindowName contains the SearchBoxText
             return tabInfo.WindowName.IndexOf(SearchTextBoxText, StringComparison.OrdinalIgnoreCase) >= 0;
@@ -860,12 +868,11 @@ namespace ProperTabGroups.Subsystem
                         // Set the selection state of the ListViewItem
                         listViewItem.IsSelected = shouldBeSelected;
                     }
+
                     // Since TabInfo was found and handled, no need to continue checking this ListView
                     break;
                 }
             }
         }
-
-
     }
 }

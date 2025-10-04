@@ -2,16 +2,8 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Windows;
 using System.Windows.Data;
-using System.Windows.Threading;
-using System;
-using CommunityToolkit.Mvvm.ComponentModel;
-using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
-using Microsoft.VisualStudio.OLE.Interop;
-using Microsoft.VisualStudio.Settings;
 using ProperTabGroups.Subsystem;
 using Window = EnvDTE.Window;
 

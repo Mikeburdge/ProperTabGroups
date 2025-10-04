@@ -13,6 +13,7 @@
              DataContext="{Binding ElementName=window, Path=ViewModel}">
 
     <UserControl.Resources>
+
         <!-- Default ListView Style -->
         <Style TargetType="ListView" x:Key="DefaultListViewStyle">
             <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
@@ -22,16 +23,32 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Focusable" Value="false"/>
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
         </Style>
 
-        <!-- Custom ListViewItem Style -->
-        <Style TargetType="ListViewItem" x:Key="TabInfoListViewStyle">
+        <!-- FLAT container for the outer ListView so the expanders bloody work -->
+        <Style TargetType="ListViewItem" x:Key="FlatListViewItemContainer">
             <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="10,0,0,0"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="ContextMenu" Value="{StaticResource TabInfoContextMenu}"/>
-            <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <ContentPresenter SnapsToDevicePixels="True"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Custom ListViewItem Row Style for Inside the Groups -->
+        <Style TargetType="ListViewItem" x:Key="TabInfoListViewStyle">
+            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
             <Setter Property="FontFamily" Value="{DynamicResource {x:Static vsShell:VsFonts.EnvironmentFontFamilyKey}}"/>
             <Setter Property="FontSize" Value="{DynamicResource {x:Static vsShell:VsFonts.EnvironmentFontSizeKey}}"/>
@@ -39,17 +56,27 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListViewItem">
-                        <Border Name="Border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1">
-                            <ContentPresenter />
-                        </Border>
+                        <Grid SnapsToDevicePixels="True">
+                            <Border x:Name="RowBackground"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="0" />
+                            <ContentPresenter HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Center"
+                                              Margin="0"/>
+                            <Border VerticalAlignment="Bottom" Height="1"
+                                    Background="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" Opacity="0.25"/>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
-                                <Setter TargetName="Border" Property="BorderBrush" Value="Transparent"/>
+                                <Setter TargetName="RowBackground" Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.CommandBarGradientKey}}"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="Red"/>
-                                <!--<Setter TargetName="" Property="FontWeight" Value="Bold"/>-->
+                                <Setter TargetName="RowBackground" Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.HighlightKey}}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.HighlightTextKey}}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.GrayTextKey}}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -57,14 +84,12 @@
             </Setter>
         </Style>
 
-        <!-- Expander Style for Group Headers -->
+        <!-- Expander for group headers: simple, no RTL trick -->
         <Style x:Key="ExpanderStyle" TargetType="{x:Type Expander}">
             <Setter Property="IsExpanded" Value="True"/>
-            <Setter Property="FlowDirection" Value="RightToLeft"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Margin" Value="0,0,5,0"/>
-            <Setter Property="ContextMenu" Value="{StaticResource TabGroupContextMenu}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0,6,0,0"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -72,9 +97,10 @@
             <Setter Property="Background" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowKey}}"/>
             <Setter Property="Foreground" Value="{DynamicResource {x:Static vsShell:VsBrushes.WindowTextKey}}"/>
             <Setter Property="FontFamily" Value="{DynamicResource {x:Static vsShell:VsFonts.EnvironmentFontFamilyKey}}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
         </Style>
 
-        <!-- Master ListView Style for main ListView and nested ListViews -->
+        <!-- Shared style used by nested list(s) -->
         <Style TargetType="ListView" x:Key="MasterListViewStyle" BasedOn="{StaticResource DefaultListViewStyle}">
             <Setter Property="ItemContainerStyle" Value="{StaticResource TabInfoListViewStyle}"/>
             <EventSetter Event="SelectionChanged" Handler="ListView_SelectionChanged"/>
@@ -98,7 +124,7 @@
                          BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
                          BorderThickness="1"
                          Padding="5"
-                         Text="Search..." Foreground="Gray"
+                         Foreground="Gray"
                          TextChanged="searchTextBox_TextChanged"
                          KeyDown="SearchTextBox_OnKeyDown"
                          GotFocus="SearchTextBox_OnGotFocus"
@@ -108,91 +134,69 @@
                         Click="ButtonBase_OnClick"/>
             </Grid>
 
-            <!-- ListView for Tab Groups -->
             <ListView x:Name="TabGroupsListView"
                       Style="{StaticResource DefaultListViewStyle}"
-                      ItemsSource="{Binding GroupsDocumentWell.View}">
-
+                      ItemContainerStyle="{StaticResource FlatListViewItemContainer}"
+                      ItemsSource="{Binding GroupsDocumentWell.View}"
+                      HorizontalContentAlignment="Stretch">
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <!-- Using Expander for collapsible group headers -->
-                        <Expander Header="{Binding Name}" Style="{StaticResource ExpanderStyle}">
+                        <Expander Header="{Binding Name}"
+                                  Style="{StaticResource ExpanderStyle}"
+                                  HorizontalAlignment="Stretch">
                             <Expander.HeaderTemplate>
                                 <DataTemplate>
-                                    <Grid FlowDirection="LeftToRight" 
-                                          HorizontalAlignment="{Binding Path=HorizontalAlignment, 
-                                                                        RelativeSource={RelativeSource FindAncestor, 
-                                                                        AncestorType={x:Type ContentPresenter}}, 
-                                                                        Mode=OneWayToSource}">
+                                    <Grid HorizontalAlignment="Stretch">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding}" Margin="0,0"/>
+                                        <TextBlock Grid.Column="0" Text="{Binding}" Margin="6,2,0,2"/>
                                     </Grid>
                                 </DataTemplate>
                             </Expander.HeaderTemplate>
-                            <!-- Nested ListView for tabs within each group -->
-                            <ListView x:Name="TabInfoItemList"
-                                      Style="{StaticResource MasterListViewStyle}"
-                                      ItemsSource="{Binding TabsInGroup.View}">
-                                <ListView.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type tabGroupScripts:TabInfo}">
-                                        <TextBlock Text="{Binding WindowName}"/>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
+
+                            <Expander.Content>
+                                <ListView x:Name="TabInfoItemList"
+                                          Style="{StaticResource MasterListViewStyle}"
+                                          ItemsSource="{Binding TabsInGroup.View}"
+                                          HorizontalContentAlignment="Stretch">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type tabGroupScripts:TabInfo}">
+                                            <TextBlock Text="{Binding WindowName}"/>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Expander.Content>
                         </Expander>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
 
-            <!-- ListView for Unassigned Tabs -->
-            <ListView x:Name="UnassignedTabsListView"
-                      Style="{StaticResource MasterListViewStyle}"
-                      ItemsSource="{Binding UnassignedTabsGroup.View}">
-                <ListView.GroupStyle>
-                    <GroupStyle>
-                        <GroupStyle.ContainerStyle>
-                            <Style TargetType="{x:Type GroupItem}">
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type GroupItem}">
-                                            <DockPanel>
-                                                <Expander Header="Unassigned Groups" Style="{StaticResource ExpanderStyle}">
-                                                    <Expander.HeaderTemplate>
-                                                        <DataTemplate>
-                                                            <Grid FlowDirection="LeftToRight" 
-                                                                  HorizontalAlignment="{Binding Path=HorizontalAlignment, 
-                                                                                            RelativeSource={RelativeSource FindAncestor, 
-                                                                                            AncestorType={x:Type ContentPresenter}}, 
-                                                                                            Mode=OneWayToSource}">
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="Auto"/>
-                                                                    <ColumnDefinition Width="*"/>
-                                                                    <ColumnDefinition Width="Auto"/>
-                                                                </Grid.ColumnDefinitions>
-                                                                <TextBlock Grid.Column="0" Text="{Binding}" Margin="0,0"/>
-                                                            </Grid>
-                                                        </DataTemplate>
-                                                    </Expander.HeaderTemplate>
-                                                    <ItemsPresenter FlowDirection="LeftToRight"/>
-                                                </Expander>
-                                            </DockPanel>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </GroupStyle.ContainerStyle>
-                    </GroupStyle>
-                </ListView.GroupStyle>
-                <ListView.ItemTemplate>
-                    <DataTemplate DataType="{x:Type tabGroupScripts:TabInfo}">
-                        <TextBlock Text="{Binding WindowName}"/>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+            <!-- Unassigned section auto-hide when no items -->
+            <Expander Header="Unassigned">
+                <Expander.Style>
+                    <Style TargetType="Expander" BasedOn="{StaticResource ExpanderStyle}">
+                        <Setter Property="Visibility" Value="Visible"/>
+                        <Style.Triggers>
+                            <!-- Collapses the whole section-->
+                            <DataTrigger Binding="{Binding UnassignedTabsGroup.View.IsEmpty}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Expander.Style>
+
+                <ListView x:Name="UnassignedTabsListView"
+                          Style="{StaticResource MasterListViewStyle}"
+                          ItemsSource="{Binding UnassignedTabsGroup.View}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate DataType="{x:Type tabGroupScripts:TabInfo}">
+                            <TextBlock Text="{Binding WindowName}"/>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Expander>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

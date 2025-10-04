@@ -25,8 +25,7 @@ namespace ProperTabGroups.DualListSelector
         public DualListboxSelectorWindowControl()
         {
             InitializeComponent();
-
-
+            
             //Loaded += (sender, e) =>
             //{
             //    // Getting the mouse position in WPF
@@ -35,7 +34,7 @@ namespace ProperTabGroups.DualListSelector
             //    Left = screenPosition.X;
             //    Top = screenPosition.Y;
             //};
-
+            
             LeftListBox.ItemsSource = LeftItems;
             RightListBox.ItemsSource = RightItems;
         }
@@ -102,8 +101,18 @@ namespace ProperTabGroups.DualListSelector
 
         private void ApplyChanges()
         {
-            if (LeftItemsOriginal == LeftItems.OrderBy(group => group.Name).ToList() 
-                && RightItemsOriginal == RightItems.OrderBy(group => group.Name).ToList())
+            //tidying this bit up a bit
+            bool leftSame = LeftItemsOriginal
+                .OrderBy(g => g.GroupGuid)
+                .Select(g => g.GroupGuid)
+                .SequenceEqual(LeftItems.OrderBy(g => g.GroupGuid).Select(g => g.GroupGuid));
+
+            bool rightSame = RightItemsOriginal
+                .OrderBy(g => g.GroupGuid)
+                .Select(g => g.GroupGuid)
+                .SequenceEqual(RightItems.OrderBy(g => g.GroupGuid).Select(g => g.GroupGuid));
+
+            if (leftSame && rightSame)
             {
                 return;
             }

@@ -124,78 +124,88 @@ namespace ProperTabGroups.Subsystems
 
             try
             {
-                if (File.Exists(pathToUse))
+                if (!File.Exists(pathToUse))
                 {
-                    string json = File.ReadAllText(pathToUse);
+                    outTabGroups = new List<TabGroup>();
+                    outTabInfos = new List<TabInfo>();
+                    return false;
+                }
 
-                    SerializableProperTabCollection tabGroupsObject =
-                        JsonConvert.DeserializeObject<SerializableProperTabCollection>(json);
+                string json = File.ReadAllText(pathToUse);
 
-                    if (tabGroupsObject == null)
+                SerializableProperTabCollection tabGroupsObject =
+                    JsonConvert.DeserializeObject<SerializableProperTabCollection>(json);
+
+                if (tabGroupsObject == null)
+                {
+                    outTabGroups = new List<TabGroup>();
+                    outTabInfos = new List<TabInfo>();
+                    return false;
+                }
+
+                List<SerializableTabGroup> serializableTabGroups = tabGroupsObject.serializableTabGroups;
+                List<SerializableTabInfo> serializableTabInfos = tabGroupsObject.serializableTabInfos;
+
+                if (serializableTabGroups != null)
+                {
+                    foreach (SerializableTabGroup serializableTabGroup in serializableTabGroups)
                     {
-                        return false;
+                        TabGroup tabGroup = new(serializableTabGroup.Name, serializableTabGroup.BIsLocked,
+                            serializableTabGroup.BIsVisible, serializableTabGroup.GroupGuid)
+                        {
+                            ColourCode = serializableTabGroup.ColourCode
+                        };
+
+                        tabGroup.TabsInGroup.View.Filter = DocumentWellManagementSubsystem.Instance.SearchBoxFilter;
+
+                        tabGroups.Add(tabGroup);
+                    }
+                }
+
+                List<Window> allActiveDocuments = _dte.Windows.Cast<Window>().Where(window => window.Kind is "Document").ToList();
+
+                foreach (SerializableTabInfo serializableTabInfo in serializableTabInfos)
+                {
+                    Window matchingTabWindow =
+                        allActiveDocuments.FirstOrDefault(x => x.Caption == serializableTabInfo.WindowName);
+
+                    TabInfo tabInfo;
+
+                    if (matchingTabWindow == null)
+                    {
+                        tabInfo = new TabInfo()
+                        {
+                            //IsSelected = serializableTabInfo.IsSelected
+                            WindowName = serializableTabInfo.WindowName,
+                            Window = null, // If this is null anyway it means that when we click to open it, it "should" open it safely
+                            DocumentPath = serializableTabInfo.DocumentPath,
+                            ViewKind = serializableTabInfo.ViewKind,
+                            Filters = new ObservableCollection<Guid>(serializableTabInfo.Filters)
+                        };
+                    }
+                    else
+                    {
+                        tabInfo = new TabInfo()
+                        {
+                            WindowName = matchingTabWindow.Caption,
+                            Window = matchingTabWindow,
+                            DocumentPath = matchingTabWindow.Document.FullName,
+                            ViewKind = matchingTabWindow.Kind,
+                            Filters = new ObservableCollection<Guid>(serializableTabInfo.Filters)
+                        };
                     }
 
-                    List<SerializableTabGroup> serializableTabGroups = tabGroupsObject.serializableTabGroups;
-                    List<SerializableTabInfo> serializableTabInfos = tabGroupsObject.serializableTabInfos;
-
-                    if (serializableTabGroups != null)
-                    {
-                        foreach (SerializableTabGroup serializableTabGroup in serializableTabGroups)
-                        {
-                            TabGroup tabGroup = new(serializableTabGroup.Name, serializableTabGroup.BIsLocked,
-                                serializableTabGroup.BIsVisible, serializableTabGroup.GroupGuid)
-                            {
-                                ColourCode = serializableTabGroup.ColourCode
-                            };
-
-                            tabGroup.TabsInGroup.View.Filter = DocumentWellManagementSubsystem.Instance.SearchBoxFilter;
-
-                            tabGroups.Add(tabGroup);
-                        }
-                    }
-
-                    List<Window> allActiveDocuments = _dte.Windows.Cast<Window>().Where(window => window.Kind is "Document").ToList();
-
-                    foreach (SerializableTabInfo serializableTabInfo in serializableTabInfos)
-                    {
-                        Window matchingTabWindow =
-                            allActiveDocuments.FirstOrDefault(x => x.Caption == serializableTabInfo.WindowName);
-
-                        TabInfo tabInfo;
-
-                        if (matchingTabWindow == null)
-                        {
-                            tabInfo = new TabInfo()
-                            {
-                                //IsSelected = serializableTabInfo.IsSelected
-                                WindowName = serializableTabInfo.WindowName,
-                                Window = null, // If this is null anyway it means that when we click to open it, it "should" open it safely
-                                DocumentPath = serializableTabInfo.DocumentPath,
-                                ViewKind = serializableTabInfo.ViewKind,
-                                Filters = new ObservableCollection<Guid>(serializableTabInfo.Filters)
-                            };
-                        }
-                        else
-                        {
-                            tabInfo = new TabInfo()
-                            {
-                                WindowName = matchingTabWindow.Caption,
-                                Window = matchingTabWindow,
-                                DocumentPath = matchingTabWindow.Document.FullName,
-                                ViewKind = matchingTabWindow.Kind,
-                                Filters = new ObservableCollection<Guid>(serializableTabInfo.Filters)
-                            };
-                        }
-
-                        allLoadedTabs.Add(tabInfo);
-                    }
+                    allLoadedTabs.Add(tabInfo);
                 }
             }
 
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading tab groups: {ex.Message}");
+
+                outTabGroups = new List<TabGroup>();
+                outTabInfos = new List<TabInfo>();
+                return false;
             }
 
             outTabGroups = tabGroups;

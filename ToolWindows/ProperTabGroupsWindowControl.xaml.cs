@@ -1,21 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 using ProperTabGroups.Subsystem;
 using EnvDTE;
-using System.Linq;
-using System.Runtime.Remoting.Channels;
 using System.Windows.Media;
 using System.Windows;
 using System.Windows.Input;
 using ProperTabGroups.DualListSelector;
-using ProperTabGroups.TabGroupScripts;
 using SelectionChangedEventArgs = System.Windows.Controls.SelectionChangedEventArgs;
 using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
-using Window = EnvDTE.Window;
-using System.Windows.Data;
-using System.Diagnostics;
-using Microsoft.VisualStudio.PlatformUI;
 
 namespace ProperTabGroups
 {
@@ -24,9 +15,6 @@ namespace ProperTabGroups
         private readonly DTE _dte;
 
         private bool _bIsSelectionChangeProgrammatic;
-
-        private TabInfo _filterModificationCurrentTabInfo = null;
-
         private bool isSelectionHandling;
 
         public DocumentWellManagementSubsystem ViewModel => DocumentWellManagementSubsystem.Instance;
@@ -53,33 +41,33 @@ namespace ProperTabGroups
             TabInfo tab = ViewModel.GetTabInfoFromWindow(_dte.ActiveDocument.ActiveWindow);
             ViewModel.SelectOnlyOneTab(tab);
         }
+
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (isSelectionHandling) return;
-
             isSelectionHandling = true;
+
             try
             {
-                // Handles all selection changed directly from the ListViews
-                HandleClearingAllOtherSelectedItemsListViewOnly(sender);
-
-                ThreadHelper.ThrowIfNotOnUIThread();
                 // Check if the selection change is programmatic and ignore it if so
                 if (_bIsSelectionChangeProgrammatic)
-                {
                     return;
-                }
 
-                ListView localListView = sender as ListView;
-
-                if (localListView?.SelectedItem is not TabInfo selectedTabInfo) return; // Safety check
-
-                if (selectedTabInfo.Window != null && selectedTabInfo.Window == _dte.ActiveWindow)
-                {
+                ListView sourceListView = sender as ListView;
+                if (sourceListView?.SelectedItem is not TabInfo selectedTabInfo)
                     return;
-                }
 
-                ViewModel.OpenFileSafely(selectedTabInfo);
+                // clear selection in ALL the other listviews
+                ClearOtherListViewSelections(sourceListView);
+                
+                ViewModel.SelectOnlyOneTab(selectedTabInfo);
+
+                // Open the file, skip if it's the active window
+                ThreadHelper.ThrowIfNotOnUIThread();
+                if (selectedTabInfo.Window == null || selectedTabInfo.Window != _dte.ActiveWindow)
+                {
+                    ViewModel.OpenFileSafely(selectedTabInfo);
+                }
             }
             finally
             {
@@ -87,49 +75,35 @@ namespace ProperTabGroups
             }
         }
 
-        private void HandleClearingAllOtherSelectedItemsListViewOnly(object sender)
+        /// <summary>
+        /// Deselects items in every ListView except the one the user interacted with.
+        /// </summary>
+        private void ClearOtherListViewSelections(ListView source)
         {
-            TabInfo selectedTabInfo = GetClickedTabInfo(sender);
-            if (selectedTabInfo == null) return;
-
-            ViewModel.SelectOnlyOneTab(selectedTabInfo);
-        }
-       
-
-        private void TabGroupsListView_OnMouseRightButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            ContextMenu cm = FindResource("TabInfoContextMenu") as ContextMenu;
-            cm.PlacementTarget = sender as Button;
-            cm.IsOpen = true;
-        }
-        private object FindDataContextForFrameworkElement(FrameworkElement element)
-        {
-            if (element.DataContext != null)
+            _bIsSelectionChangeProgrammatic = true;
+            try
             {
-                return element.DataContext;
-            }
-
-            FrameworkElement parent = VisualTreeHelper.GetParent(element) as FrameworkElement;
-            while (parent != null)
-            {
-                if (parent.DataContext != null)
+                foreach (ListView list in ViewModel.GetAllListViews(this))
                 {
-                    return parent.DataContext;
+                    if (!ReferenceEquals(list, source))
+                    {
+                        list.SelectedItem = null;
+                        list.UnselectAll();
+                    }
                 }
-                parent = VisualTreeHelper.GetParent(parent) as FrameworkElement;
             }
-
-            return null;
+            finally
+            {
+                _bIsSelectionChangeProgrammatic = false;
+            }
         }
 
         private void ModifyFilters_OnClick(object sender, RoutedEventArgs e)
         {
             TabInfo selectedTabInfo = GetClickedTabInfo(sender);
-
-            //TabInfo selectedTabInfo = ViewModel.GetFirstSelectedTabInfoInGroups();
             if (selectedTabInfo == null) return;
 
-            DualListboxSelectorWindowControl selectorWindow = new();
+            DualListboxSelectorWindowControl selectorWindow = new DualListboxSelectorWindowControl();
             selectorWindow.Show();
             selectorWindow.PopulateInitialItems(selectedTabInfo);
         }
@@ -139,56 +113,39 @@ namespace ProperTabGroups
             if (sender is MenuItem menuItem)
             {
                 ContextMenu contextMenu = menuItem.Parent as ContextMenu;
-
-                FrameworkElement placementTarget = contextMenu.PlacementTarget as FrameworkElement;
+                FrameworkElement placementTarget = contextMenu?.PlacementTarget as FrameworkElement;
                 object dataContext = FindDataContextForFrameworkElement(placementTarget);
-
-                TabInfo selectedTabInfo = dataContext as TabInfo;
-                return selectedTabInfo;
+                return dataContext as TabInfo;
             }
 
-            ListView listView = sender as ListView;
+            if (sender is ListView listView)
+            {
+                return listView.SelectedItem as TabInfo;
+            }
 
-            if (listView == null) return null;
-
-            TabInfo listViewTabInfo = listView.SelectedItem as TabInfo;
-
-            if (listViewTabInfo == null) return null;
-
-            return listViewTabInfo;
+            return null;
         }
 
-        private void DeleteGroup_OnClick(object sender, RoutedEventArgs e)
+        private object FindDataContextForFrameworkElement(FrameworkElement element)
         {
-            MenuItem menuItem = sender as MenuItem;
-            ContextMenu contextMenu = menuItem.Parent as ContextMenu;
-            FrameworkElement placementTarget = contextMenu.PlacementTarget as FrameworkElement;
-            object dataContext = FindDataContextForFrameworkElement(placementTarget);
+            if (element?.DataContext != null)
+                return element.DataContext;
 
-            // Check if the dataContext is a CollectionViewGroup
-            if (dataContext is CollectionViewGroup collectionViewGroup)
+            FrameworkElement parent = VisualTreeHelper.GetParent(element) as FrameworkElement;
+            while (parent != null)
             {
-                // Access the items in the group
-                foreach (object item in collectionViewGroup.Items)
-                {
-                    // Now you can work with each item, which might be of the type TabGroup
-                    TabGroup tabGroup = item as TabGroup;
-                    if (tabGroup == null) continue;
-                    ViewModel.DeleteTabGroup(tabGroup);
-                    return;
-                }
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"DataContext is not a CollectionViewGroup.");
+                if (parent.DataContext != null)
+                    return parent.DataContext;
+
+                parent = VisualTreeHelper.GetParent(parent) as FrameworkElement;
             }
 
+            return null;
         }
 
         private void ClearFilters_OnClick(object sender, RoutedEventArgs e)
         {
             TabInfo tabInfo = GetClickedTabInfo(sender);
-
             if (tabInfo == null) return;
 
             tabInfo.Filters.Clear();

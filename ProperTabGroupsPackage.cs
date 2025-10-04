@@ -6,9 +6,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using ProperTabGroups.Subsystem;
 using ProperTabGroups.Subsystems;
-using EnvDTE;
-using Microsoft.VisualStudio.Shell.Interop;
-using EnvDTE80;
 
 namespace ProperTabGroups
 {

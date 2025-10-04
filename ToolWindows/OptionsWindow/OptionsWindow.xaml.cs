@@ -2,10 +2,8 @@
 using ProperTabGroups.Subsystems;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Win32;
-using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.WindowsAPICodePack.Dialogs;
-using MessageBox = System.Windows.Forms.MessageBox;
+using System.Windows.Media.Imaging;
 
 namespace ProperTabGroups.ToolWindows.OptionsWindow
 {
@@ -17,30 +15,16 @@ namespace ProperTabGroups.ToolWindows.OptionsWindow
         public OptionsWindow()
         {
             InitializeComponent();
-            //try
-            //{
-            //    ChevronDown = new BitmapImage(new Uri("/pack://application:,,,/Resources/ChevronDown.png"));
-            //    ChevronUp = new BitmapImage(new Uri("/pack://application:,,,/Resources//ChevronUp.png"));
-            //}
-            //catch (Exception ex)
-            //{
-            //    Debug.WriteLine("Error loading images: " + ex.Message);
-            //}
-
         }
 
-
-        //private BitmapImage ChevronDown;
-        //private BitmapImage ChevronUp;
-
-
-        //private bool isChevronDown = true; // State tracking variable
         private void ToggleImageButton_Click(object sender, RoutedEventArgs e)
         {
-            //OpenCloseButtonImage.Source = isChevronDown ? ChevronUp : ChevronDown;
-            //isChevronDown = !isChevronDown; // Toggle the state
-
+            // Toggle panel visibility
             OptionsPanel.Visibility = OptionsPanel.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
+
+            // hopefully the chevron fucking works now
+            bool isNowVisible = OptionsPanel.Visibility == Visibility.Visible;
+            OpenCloseButtonImage.Source = new BitmapImage(new Uri(isNowVisible ? "/Resources/ChevronUp.png" : "/Resources/ChevronDown.png", UriKind.Relative));
         }
 
         private void AddNewGroup(object sender, RoutedEventArgs e)
@@ -107,14 +91,12 @@ namespace ProperTabGroups.ToolWindows.OptionsWindow
             dialog.EnsureFileExists = true;  // Ensure the file must exist
             dialog.InitialDirectory = projectAppDataDirectory;
 
-
             return dialog.ShowDialog() == CommonFileDialogResult.Ok ? dialog.FileName : null;
         }
         private static string OpenSaveFileDialog()
         {
-            using (var dialog = new CommonSaveFileDialog())
+            using (CommonSaveFileDialog dialog = new CommonSaveFileDialog())
             {
-
                 string projectAppDataDirectory = SaveLoadManager.Instance.GetDefaultDirectory();
 
                 dialog.Title = "Save Tab Groups";
