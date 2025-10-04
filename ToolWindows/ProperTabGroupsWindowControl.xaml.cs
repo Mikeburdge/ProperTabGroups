@@ -42,6 +42,19 @@ namespace ProperTabGroups
             ViewModel.SelectOnlyOneTab(tab);
         }
 
+        public void WasProgrammaticallySelected(Action action)
+        {
+            _bIsSelectionChangeProgrammatic = true;
+            try
+            {
+                action();
+            }
+            finally
+            {
+                _bIsSelectionChangeProgrammatic = false;
+            }
+        }
+
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (isSelectionHandling) return;
@@ -59,7 +72,7 @@ namespace ProperTabGroups
 
                 // clear selection in ALL the other listviews
                 ClearOtherListViewSelections(sourceListView);
-                
+
                 ViewModel.SelectOnlyOneTab(selectedTabInfo);
 
                 // Open the file, skip if it's the active window

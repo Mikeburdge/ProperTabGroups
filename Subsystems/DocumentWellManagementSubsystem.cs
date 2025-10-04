@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
-using System.Windows.Data;
 using EnvDTE;
 using ProperTabGroups.TabGroupScripts;
 using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
@@ -14,15 +13,8 @@ using Window = EnvDTE.Window;
 using System.Diagnostics;
 using ProperTabGroups.Subsystems;
 using Constants = EnvDTE.Constants;
-using System.Globalization;
 using System.Windows;
-using Microsoft.VisualStudio.PlatformUI;
-using Microsoft.VisualStudio.Experimentation;
-using System.Net.NetworkInformation;
-using Microsoft.Internal.VisualStudio.Shell;
-using System.Windows.Documents;
 using System.Windows.Media;
-using Community.VisualStudio.Toolkit;
 using CollectionViewSource = System.Windows.Data.CollectionViewSource;
 
 namespace ProperTabGroups.Subsystem
@@ -35,12 +27,14 @@ namespace ProperTabGroups.Subsystem
         private DTE _dte;
 
         private const string UnassignedTabsGroupName = "Unassigned Tabs";
+
         // Beginning to be Deprecated
         public static Guid UnassignedTabsGroupGuid = new("8CF0C899-378A-4B58-ADD5-4B9C211B6CDF"); //Guid.NewGuid();
         public static Guid ClosedFileGuid = new("045ca0af-b76a-4222-9958-12a287a26e68");
 
         public CollectionViewSource GroupsDocumentWell { get; set; }
         private ObservableCollection<TabGroup> _groupsDocumentWellSource;
+
         public ObservableCollection<TabGroup> GroupsDocumentWellSource
         {
             get => _groupsDocumentWellSource;
@@ -64,13 +58,16 @@ namespace ProperTabGroups.Subsystem
                 }
             }
         }
-        private void OnGroupsDocumentWellSourceChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
+
+        private void OnGroupsDocumentWellSourceChanged(object sender,
+            NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
         {
             RefreshGroupsView();
         }
 
         public bool IsUnassignedListBoxVisible = true;
         private ObservableCollection<TabInfo> _unassignedTabsGroupSource;
+
         public ObservableCollection<TabInfo> UnassignedTabsGroupSource
         {
             get => _unassignedTabsGroupSource;
@@ -97,10 +94,11 @@ namespace ProperTabGroups.Subsystem
 
         public CollectionViewSource UnassignedTabsGroup { get; set; }
 
-        private void OnUnassignedTabsSourceChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
+        private void OnUnassignedTabsSourceChanged(object sender,
+            NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
         {
             //IsUnassignedListBoxVisible = UnassignedTabsGroupSource.Any();
-            
+
             RefreshAll();
         }
 
@@ -152,12 +150,14 @@ namespace ProperTabGroups.Subsystem
             ThreadHelper.ThrowIfNotOnUIThread();
 
             // Sort groups by name
-            GroupsDocumentWell.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name), ListSortDirection.Ascending));
+            GroupsDocumentWell.SortDescriptions.Add(new SortDescription(nameof(TabGroup.Name),
+                ListSortDirection.Ascending));
 
             RefreshGroupsView();
 
             // sort by filename
-            UnassignedTabsGroup.SortDescriptions.Add(new SortDescription(nameof(TabInfo.WindowName), ListSortDirection.Ascending));
+            UnassignedTabsGroup.SortDescriptions.Add(new SortDescription(nameof(TabInfo.WindowName),
+                ListSortDirection.Ascending));
 
             RefreshUnassignedGroupsListView();
 
@@ -177,7 +177,7 @@ namespace ProperTabGroups.Subsystem
             ConfigureGroupFunctionality();
             _dte.Events.SolutionEvents.Opened += SolutionOpened;
         }
-        
+
         private void SolutionOpened()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -245,14 +245,33 @@ namespace ProperTabGroups.Subsystem
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             // This "Pattern" below also checks if GotFocus is null
-            if (gotFocus is { Kind: "Document" })
-            {
-                TabInfo tab = GetTabInfoFromWindow(gotFocus);
-                SelectOnlyOneTab(tab);
-            }
+            if (gotFocus is not { Kind: "Document" }) return;
+            
+            string caption = gotFocus.Caption;
+            string fullPath = gotFocus?.Document?.FullName;
+
+            SelectAllTabsMatching(caption, fullPath);
         }
 
+        private void SelectAllTabsMatching(string caption, string fullPath)
+        {
+            bool Match(TabInfo tabInfo)
+            {
+                if (!string.IsNullOrWhiteSpace(fullPath) && !string.IsNullOrWhiteSpace(tabInfo.DocumentPath))
+                {
+                    return string.Equals(tabInfo.DocumentPath, fullPath, StringComparison.OrdinalIgnoreCase);
+                }
 
+                return string.Equals(tabInfo.WindowName, caption, StringComparison.OrdinalIgnoreCase);
+            }
+            
+            // cleaner to do it this way, save having a huge indented for loop
+            foreach (TabInfo tabInfo in AllTabInfos)
+            {
+                tabInfo.IsSelected = Match(tabInfo);
+            }
+        }
+        
         // Helper method to create a new TabInfo based on an open window
         private TabInfo CreateNewTabInfo(Window window)
         {
@@ -404,7 +423,7 @@ namespace ProperTabGroups.Subsystem
             }
 
             TabInfo tabInfoByName = GetTabInfoByName(window.Caption);
-            
+
             return tabInfoByName != null ? tabInfoByName : new TabInfo(window, new ObservableCollection<Guid>());
         }
 
@@ -852,27 +871,65 @@ namespace ProperTabGroups.Subsystem
 
         public void SetIfTabIsSelected(TabInfo tabToModify, bool shouldBeSelected)
         {
-            IEnumerable<ListView> allListViews = GetAllListViews(ProperTabGroupWindowControlRef);
-
-            // Loop through each ListView in the application or window
-            foreach (ListView currentListView in allListViews)
+            if (ProperTabGroupWindowControlRef == null)
             {
-                // Check if the ListView contains the TabInfo item
-                foreach (object item in currentListView.Items)
-                {
-                    if (item is not TabInfo currentTabInfo || currentTabInfo != tabToModify) continue;
-
-                    // Retrieve the ListViewItem corresponding to the currentTabInfo
-                    if (currentListView.ItemContainerGenerator.ContainerFromItem(currentTabInfo) is ListViewItem listViewItem)
-                    {
-                        // Set the selection state of the ListViewItem
-                        listViewItem.IsSelected = shouldBeSelected;
-                    }
-
-                    // Since TabInfo was found and handled, no need to continue checking this ListView
-                    break;
-                }
+                return;
             }
+
+            // snapshot the lists first to avoid the collection modified crash
+            var listViews = GetAllListViews(ProperTabGroupWindowControlRef).ToList();
+
+            ProperTabGroupWindowControlRef.WasProgrammaticallySelected(() =>
+            {
+                foreach (ListView CurrentListView in listViews)
+                {
+                    //snapshot again 
+                    List<object> items = CurrentListView.Items.Cast<object>().ToList();
+
+                    foreach (object item in items)
+                    {
+                        if (!ReferenceEquals(item,  tabToModify))
+                        {
+                            continue;
+                        }
+
+                        // Retrieve the ListViewItem corresponding to the currentTabInfo
+                        ListViewItem currentContainer = CurrentListView.ItemContainerGenerator.ContainerFromItem(item) as ListViewItem;
+
+                        if (currentContainer == null)
+                        {   
+                            // if the ListViewItem isnt valid then update the child elements of CurrentListView and hope it is now valid
+                            CurrentListView.UpdateLayout();
+                            
+                            currentContainer = CurrentListView.ItemContainerGenerator.ContainerFromItem(item) as ListViewItem;
+                        }
+
+                        if (currentContainer != null)
+                        {
+                            // Set the selection state of the ListViewItem
+                            currentContainer.IsSelected = shouldBeSelected;
+                        }
+                        else
+                        {
+                            // fallback, we force it
+                            if (shouldBeSelected)
+                            {
+                                CurrentListView.SelectedItem = item;
+                            }
+                            else if (CurrentListView.SelectedItem == item)
+                            {
+                                CurrentListView.SelectedItem = null;
+                            }
+                        }
+                        
+                        // Since TabInfo was found, no need to continue checking this ListView
+                        break;
+                    }
+                }
+            });
+            
+            
+
         }
     }
 }
