@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Windows.Controls;
 using EnvDTE;
 using ProperTabGroups.TabGroupScripts;
 using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
@@ -13,8 +12,6 @@ using Window = EnvDTE.Window;
 using System.Diagnostics;
 using ProperTabGroups.Subsystems;
 using Constants = EnvDTE.Constants;
-using System.Windows;
-using System.Windows.Media;
 using CollectionViewSource = System.Windows.Data.CollectionViewSource;
 
 namespace ProperTabGroups.Subsystem
@@ -818,7 +815,85 @@ namespace ProperTabGroups.Subsystem
             tabInfo.Filters.Remove(filter);
         }
 
-        // Additional methods as necessary for drag-and-drop, custom icons, etc.
+        public void MoveTabBetweenGroups(TabInfo tabInfo, Guid? sourceGroupGuid, Guid? targetGroupGuid)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            if (tabInfo == null)
+            {
+                Debug.WriteLine("MoveTabBetweenGroups: TabInfo is null");
+                return;
+            }
+
+            // moveing it to no group means unassigning it.
+            if (!targetGroupGuid.HasValue)
+            {
+                MoveTabToUnassigned(tabInfo);
+            }
+
+            if (sourceGroupGuid.HasValue && targetGroupGuid != null && sourceGroupGuid.Value == targetGroupGuid.Value)
+            {
+                return;
+            }
+
+            TabGroup existingGroup = null;
+            if (!GetTabGroupFromGuid(targetGroupGuid.Value, ref existingGroup))
+            {
+                Debug.WriteLine($"MoveTabBetweenGroups: Group with guid {targetGroupGuid} not found.");
+                return;
+            }
+
+            if (sourceGroupGuid.HasValue)
+            {
+                RemoveFilterFromTab(tabInfo, sourceGroupGuid.Value);
+            }
+
+            AddFilterToTab(tabInfo, targetGroupGuid.Value);
+        }
+
+        private void MoveTabToUnassigned(TabInfo tabInfo)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            if (tabInfo == null)
+            {
+                Debug.WriteLine("MoveTabToUnassigned: TabInfo is null");
+                return;
+            }
+
+            if (tabInfo.Filters == null || tabInfo.Filters.Count == 0)
+            {
+                return;
+            }
+
+            tabInfo.Filters.Clear();
+        }
+
+        public void CopyTabToGroup(TabInfo tabInfo, Guid? sourceGroupGuid, Guid? targetGroupGuid)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            if (tabInfo == null)
+            {
+                Debug.WriteLine("CopyTabToGroup: TabInfo is null");
+                return;
+            }
+
+            if (!targetGroupGuid.HasValue)
+            {
+                return;
+            }
+
+            TabGroup existingGroup = null;
+            if (!GetTabGroupFromGuid(targetGroupGuid.Value, ref existingGroup))
+            {
+                Debug.WriteLine($"CopyTabToGroup: Group with guid {targetGroupGuid} not found.");
+                return;
+            }
+            
+            AddFilterToTab(tabInfo, targetGroupGuid.Value);
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -841,7 +916,6 @@ namespace ProperTabGroups.Subsystem
             if (selectedTabInfo == null || string.IsNullOrWhiteSpace(selectedTabInfo.DocumentPath))
             {
                 Debug.WriteLine("Selected tabInfo info is null or path is empty.");
-                // Optionally, show a user-friendly message or log this incident.
                 return;
             }
 
@@ -851,45 +925,17 @@ namespace ProperTabGroups.Subsystem
             if (!File.Exists(filePath))
             {
                 Debug.WriteLine($"File not found: {filePath}");
-                // Optionally, inform the user that the file could not be found.
                 return;
             }
 
             try
             {
-                // Open the file with a specific view kind if necessary. Here, using the default text view.
                 const string fileKind = Constants.vsViewKindCode; // This is typically for text files.
                 _dte.ItemOperations.OpenFile(filePath, fileKind);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Failed to open file '{filePath}': {ex.Message}");
-                // Log the error or inform the user through a dialog, depending on your application's needs.
-            }
-        }
-
-        public IEnumerable<ListView> GetAllListViews(DependencyObject parent)
-        {
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
-                if (child is ListView listView)
-                {
-                    yield return listView;
-                    // Recursively search within this ListView
-                    foreach (ListView subItem in GetAllListViews(listView))
-                    {
-                        yield return subItem;
-                    }
-                }
-                else
-                {
-                    // Recursively search in non-ListView children
-                    foreach (ListView subItem in GetAllListViews(child))
-                    {
-                        yield return subItem;
-                    }
-                }
             }
         }
 
@@ -905,11 +951,6 @@ namespace ProperTabGroups.Subsystem
 
             // Case-insensitive check if WindowName contains the SearchBoxText
             return tabInfo.WindowName.IndexOf(SearchTextBoxText, StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        public bool HideAllFilter(object item)
-        {
-            return false;
         }
     }
 }
