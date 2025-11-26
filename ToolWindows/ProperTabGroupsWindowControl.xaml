@@ -84,7 +84,7 @@
             </Setter>
         </Style>
 
-        <!-- Expander for group headers: simple, no RTL trick -->
+        <!-- Expander for group headers -->
         <Style x:Key="ExpanderStyle" TargetType="{x:Type Expander}">
             <Setter Property="IsExpanded" Value="True"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -102,7 +102,12 @@
 
         <!-- Shared style used by nested list(s) -->
         <Style TargetType="ListView" x:Key="MasterListViewStyle" BasedOn="{StaticResource DefaultListViewStyle}">
-            <Setter Property="ItemContainerStyle" Value="{StaticResource TabInfoListViewStyle}"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ListViewItem" BasedOn="{StaticResource TabInfoListViewStyle}">
+                    </Style>
+                </Setter.Value>
+            </Setter>
             <EventSetter Event="SelectionChanged" Handler="ListView_SelectionChanged"/>
             <EventSetter Event="MouseDoubleClick" Handler="ModifyFilters_OnClick"/>
         </Style>

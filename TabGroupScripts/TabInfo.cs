@@ -11,7 +11,6 @@ namespace ProperTabGroups.TabGroupScripts
 {
     public class TabGroup : INotifyPropertyChanged
     {
-
         //////////////////////////////////////////
         // Tabs In Group Section
         //////////////////////////////////////////
@@ -80,6 +79,7 @@ namespace ProperTabGroups.TabGroupScripts
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
         private void TabsInGroupSource_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             ItemCount = TabsInGroupSource.Count;
@@ -98,23 +98,23 @@ namespace ProperTabGroups.TabGroupScripts
     {
         // todo: probably for the best to create a non-persistent guid. one that is given at the start of the session and used to identify tabd within sessions. MAYBE
         private bool _isSelected;
+
         public bool IsSelected
         {
             get => _isSelected;
             set
             {
-                if (_isSelected != value)
-                {
-                    _isSelected = value;
-                    OnPropertyChanged();
-
-                    DocumentWellManagementSubsystem.Instance.SetIfTabIsSelected(this, value);
-                }
+                if (_isSelected == value) return;
+                
+                _isSelected = value;
+                OnPropertyChanged();
             }
         }
+
         public Window Window { get; set; }
 
         private ObservableCollection<Guid> _filters;
+
         public ObservableCollection<Guid> Filters
         {
             get => _filters;
@@ -136,7 +136,6 @@ namespace ProperTabGroups.TabGroupScripts
                     // Subscribe to the CollectionChanged event of the new collection
                     _filters.CollectionChanged += Filters_CollectionChanged;
                 }
-
             }
         }
 
@@ -145,13 +144,14 @@ namespace ProperTabGroups.TabGroupScripts
         //////////////////////////////////////////
         /// 
         public string WindowName { get; set; }
+
         public string DocumentPath { get; set; }
         public string ViewKind { get; set; }
 
         public TabInfo()
         {
-
         }
+
         public TabInfo(Window window, ObservableCollection<Guid> filters)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -160,7 +160,6 @@ namespace ProperTabGroups.TabGroupScripts
             WindowName = window.Caption;
             DocumentPath = window.Document.FullName;
             ViewKind = window.Kind;
-
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

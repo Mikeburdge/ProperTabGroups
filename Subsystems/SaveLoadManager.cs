@@ -175,7 +175,6 @@ namespace ProperTabGroups.Subsystems
                     {
                         tabInfo = new TabInfo()
                         {
-                            //IsSelected = serializableTabInfo.IsSelected
                             WindowName = serializableTabInfo.WindowName,
                             Window = null, // If this is null anyway it means that when we click to open it, it "should" open it safely
                             DocumentPath = serializableTabInfo.DocumentPath,

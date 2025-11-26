@@ -103,6 +103,39 @@ namespace ProperTabGroups.Subsystem
         }
 
         public readonly List<TabInfo> AllTabInfos;
+
+
+        private TabInfo _selectedTab;
+
+        public TabInfo SelectedTab
+        {
+            get => _selectedTab;
+            set
+            {
+                if (_selectedTab == value)
+                {
+                    return;
+                }
+
+                _selectedTab = value;
+                OnPropertyChanged();
+
+                if (ProperTabGroupWindowControlRef != null && _selectedTab != null)
+                {
+                    ProperTabGroupWindowControlRef.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        ThreadHelper.ThrowIfNotOnUIThread();
+                        // ok so there is a slight bug where the selection doesnt get updated on project load for some files, this isnt a huge issue but I think its because the _selectedTab gets here null.
+                        if (_selectedTab?.Window == null || _selectedTab?.Window != _dte.ActiveWindow)
+                        {
+                            OpenFileSafely(_selectedTab);
+                        }
+                    }), System.Windows.Threading.DispatcherPriority.Background);
+                }
+            }
+        }
+
+
         private string _searchTextBoxText;
 
         public ProperTabGroupsWindowControl ProperTabGroupWindowControlRef { get; set; }
@@ -239,6 +272,9 @@ namespace ProperTabGroups.Subsystem
 
             // After initializing all tabs, realign them to their respective filtered groups
             RealignTabsToFilteredGroups();
+
+            // Sync the active window, this should sync the initially active window when loading up
+            SyncSelectionToActiveWindow();
         }
 
         private void WindowActivated(Window gotFocus, Window lostFocus)
@@ -246,7 +282,7 @@ namespace ProperTabGroups.Subsystem
             ThreadHelper.ThrowIfNotOnUIThread();
             // This "Pattern" below also checks if GotFocus is null
             if (gotFocus is not { Kind: "Document" }) return;
-            
+
             string caption = gotFocus.Caption;
             string fullPath = gotFocus?.Document?.FullName;
 
@@ -264,14 +300,10 @@ namespace ProperTabGroups.Subsystem
 
                 return string.Equals(tabInfo.WindowName, caption, StringComparison.OrdinalIgnoreCase);
             }
-            
-            // cleaner to do it this way, save having a huge indented for loop
-            foreach (TabInfo tabInfo in AllTabInfos)
-            {
-                tabInfo.IsSelected = Match(tabInfo);
-            }
+
+            SelectedTab = AllTabInfos.FirstOrDefault(Match);
         }
-        
+
         // Helper method to create a new TabInfo based on an open window
         private TabInfo CreateNewTabInfo(Window window)
         {
@@ -474,10 +506,7 @@ namespace ProperTabGroups.Subsystem
 
         public void SelectOnlyOneTab(TabInfo tabToModify)
         {
-            foreach (TabInfo tabInfo in AllTabInfos)
-            {
-                tabInfo.IsSelected = tabInfo.Equals(tabToModify);
-            }
+            SelectedTab = tabToModify;
         }
 
         // Helper methods used in WindowClosing
@@ -583,6 +612,20 @@ namespace ProperTabGroups.Subsystem
             }
 
             RefreshAll();
+        }
+
+        public void SyncSelectionToActiveWindow()
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            Window activeWindow = _dte?.ActiveWindow;
+
+            if (activeWindow is { Kind: "Document" })
+            {
+                string caption = activeWindow.Caption;
+                string fullPath = activeWindow.Document?.FullName;
+
+                SelectAllTabsMatching(caption, fullPath);
+            }
         }
 
         private void ValidateCurrentGroups()
@@ -867,69 +910,6 @@ namespace ProperTabGroups.Subsystem
         public bool HideAllFilter(object item)
         {
             return false;
-        }
-
-        public void SetIfTabIsSelected(TabInfo tabToModify, bool shouldBeSelected)
-        {
-            if (ProperTabGroupWindowControlRef == null)
-            {
-                return;
-            }
-
-            // snapshot the lists first to avoid the collection modified crash
-            var listViews = GetAllListViews(ProperTabGroupWindowControlRef).ToList();
-
-            ProperTabGroupWindowControlRef.WasProgrammaticallySelected(() =>
-            {
-                foreach (ListView CurrentListView in listViews)
-                {
-                    //snapshot again 
-                    List<object> items = CurrentListView.Items.Cast<object>().ToList();
-
-                    foreach (object item in items)
-                    {
-                        if (!ReferenceEquals(item,  tabToModify))
-                        {
-                            continue;
-                        }
-
-                        // Retrieve the ListViewItem corresponding to the currentTabInfo
-                        ListViewItem currentContainer = CurrentListView.ItemContainerGenerator.ContainerFromItem(item) as ListViewItem;
-
-                        if (currentContainer == null)
-                        {   
-                            // if the ListViewItem isnt valid then update the child elements of CurrentListView and hope it is now valid
-                            CurrentListView.UpdateLayout();
-                            
-                            currentContainer = CurrentListView.ItemContainerGenerator.ContainerFromItem(item) as ListViewItem;
-                        }
-
-                        if (currentContainer != null)
-                        {
-                            // Set the selection state of the ListViewItem
-                            currentContainer.IsSelected = shouldBeSelected;
-                        }
-                        else
-                        {
-                            // fallback, we force it
-                            if (shouldBeSelected)
-                            {
-                                CurrentListView.SelectedItem = item;
-                            }
-                            else if (CurrentListView.SelectedItem == item)
-                            {
-                                CurrentListView.SelectedItem = null;
-                            }
-                        }
-                        
-                        // Since TabInfo was found, no need to continue checking this ListView
-                        break;
-                    }
-                }
-            });
-            
-            
-
         }
     }
 }

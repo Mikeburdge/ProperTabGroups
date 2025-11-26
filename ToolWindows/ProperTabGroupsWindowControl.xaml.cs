@@ -1,4 +1,6 @@
-﻿using System.Windows.Controls;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Windows.Controls;
 using ProperTabGroups.Subsystem;
 using EnvDTE;
 using System.Windows.Media;
@@ -7,6 +9,7 @@ using System.Windows.Input;
 using ProperTabGroups.DualListSelector;
 using SelectionChangedEventArgs = System.Windows.Controls.SelectionChangedEventArgs;
 using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
+using System.ComponentModel;
 
 namespace ProperTabGroups
 {
@@ -15,7 +18,6 @@ namespace ProperTabGroups
         private readonly DTE _dte;
 
         private bool _bIsSelectionChangeProgrammatic;
-        private bool isSelectionHandling;
 
         public DocumentWellManagementSubsystem ViewModel => DocumentWellManagementSubsystem.Instance;
 
@@ -25,89 +27,106 @@ namespace ProperTabGroups
 
             ThreadHelper.ThrowIfNotOnUIThread();
             _dte = Package.GetGlobalService(typeof(DTE)) as DTE;
-
+           
+            ViewModel.ProperTabGroupWindowControlRef = this;
+            ViewModel.PropertyChanged += ViewModelOnDocumentChanged;
+            
             if (_dte == null) return;
             _dte.Events.SolutionEvents.Opened += SolutionOpened;
-
-            ViewModel.ProperTabGroupWindowControlRef = this;
         }
 
         private void SolutionOpened()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            if (_dte.ActiveDocument is not { ActiveWindow: not null }) return;
-
-            TabInfo tab = ViewModel.GetTabInfoFromWindow(_dte.ActiveDocument.ActiveWindow);
-            ViewModel.SelectOnlyOneTab(tab);
+            ViewModel.SyncSelectionToActiveWindow();
         }
 
-        public void WasProgrammaticallySelected(Action action)
+        private void ViewModelOnDocumentChanged(object sendder, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(DocumentWellManagementSubsystem.SelectedTab))
+            {
+                UpdateSelectionFromViewModel();
+            }   
+        }
+
+        private void UpdateSelectionFromViewModel()
+        {
+            TabInfo selectedTab = ViewModel.SelectedTab;
+            
             _bIsSelectionChangeProgrammatic = true;
             try
             {
-                action();
-            }
-            finally
-            {
-                _bIsSelectionChangeProgrammatic = false;
-            }
-        }
-
-        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (isSelectionHandling) return;
-            isSelectionHandling = true;
-
-            try
-            {
-                // Check if the selection change is programmatic and ignore it if so
-                if (_bIsSelectionChangeProgrammatic)
-                    return;
-
-                ListView sourceListView = sender as ListView;
-                if (sourceListView?.SelectedItem is not TabInfo selectedTabInfo)
-                    return;
-
-                // clear selection in ALL the other listviews
-                ClearOtherListViewSelections(sourceListView);
-
-                ViewModel.SelectOnlyOneTab(selectedTabInfo);
-
-                // Open the file, skip if it's the active window
-                ThreadHelper.ThrowIfNotOnUIThread();
-                if (selectedTabInfo.Window == null || selectedTabInfo.Window != _dte.ActiveWindow)
+                foreach (ListView list in GetAllListViews(this))
                 {
-                    ViewModel.OpenFileSafely(selectedTabInfo);
-                }
-            }
-            finally
-            {
-                isSelectionHandling = false;
-            }
-        }
-
-        /// <summary>
-        /// Deselects items in every ListView except the one the user interacted with.
-        /// </summary>
-        private void ClearOtherListViewSelections(ListView source)
-        {
-            _bIsSelectionChangeProgrammatic = true;
-            try
-            {
-                foreach (ListView list in ViewModel.GetAllListViews(this))
-                {
-                    if (!ReferenceEquals(list, source))
+                    if (selectedTab != null && list.Items.Contains(selectedTab))
                     {
-                        list.SelectedItem = null;
-                        list.UnselectAll();
+                        if (!Equals(list.SelectedItem, selectedTab))
+                        {
+                            list.SelectedItem = selectedTab;
+                            list.ScrollIntoView(selectedTab);
+                        }
+                    }
+                    else
+                    {
+                        // else, make sure its not selected
+                        if (list.SelectedItem != null)
+                        {
+                            list.SelectedItem = null;
+                        }
                     }
                 }
             }
             finally
             {
                 _bIsSelectionChangeProgrammatic = false;
+            }
+        }
+
+        private IEnumerable<ListView> GetAllListViews(DependencyObject parent)
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                if (child is ListView listView)
+                {
+                    yield return listView;
+
+                    foreach (var subList in GetAllListViews(listView))
+                    {
+                        yield return subList;
+                    }
+                }
+                else
+                {
+                    foreach (var subList in GetAllListViews(child))
+                    {
+                        yield return subList;
+                    }
+                }
+            }
+        }
+
+
+        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Check if the selection change is programmatic and ignore it if so
+            if (_bIsSelectionChangeProgrammatic)
+                return;
+
+            // ensure it's a ListView
+            if (sender is not ListView sourceListView)
+            {
+                return;
+            }
+
+            if (sourceListView.SelectedItem is TabInfo selectedTabInfo)
+            {
+                ViewModel.SelectedTab = selectedTabInfo;
+            }
+            else
+            {
+                ViewModel.SelectedTab = null;
             }
         }
 
