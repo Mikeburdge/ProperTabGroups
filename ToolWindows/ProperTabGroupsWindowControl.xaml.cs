@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Windows.Controls;
 using ProperTabGroups.Subsystem;
 using EnvDTE;
@@ -8,7 +7,7 @@ using System.Windows;
 using System.Windows.Input;
 using ProperTabGroups.DualListSelector;
 using SelectionChangedEventArgs = System.Windows.Controls.SelectionChangedEventArgs;
-using TabInfo = ProperTabGroups.TabGroupScripts.TabInfo;
+using ProperTabGroups.TabGroupScripts;
 using System.ComponentModel;
 
 namespace ProperTabGroups
@@ -106,7 +105,6 @@ namespace ProperTabGroups
                 }
             }
         }
-
 
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -221,5 +219,47 @@ namespace ProperTabGroups
             searchTextBox.Foreground = Brushes.Gray;
             searchTextBox.Text = "Search...";
         }
+
+        
+
+        private TabGroup FindParentTabGroup(DependencyObject element)
+        {
+            DependencyObject current = element;
+
+            while (current != null)
+            {
+                if (current is FrameworkElement fe && fe.DataContext is TabGroup group)
+                {
+                    return group;
+                }
+                current = VisualTreeHelper.GetParent(current);
+            }
+
+            return null;
+        }
+
+        private void RemoveFromGroupButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button)
+            {
+                return;
+            }
+
+            // return if the datacontext of the button is not tab info
+            if (button.DataContext is not TabInfo tabInfo)
+            {
+                return;
+            }
+            
+            TabGroup parentGroup = FindParentTabGroup(button);
+            if (parentGroup == null)
+            {
+                return;
+            }
+            
+            ViewModel.RemoveFilterFromTab(tabInfo, parentGroup.GroupGuid);
+        }
+        
+        
     }
 }

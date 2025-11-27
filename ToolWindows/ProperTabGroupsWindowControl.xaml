@@ -168,7 +168,25 @@
                                           HorizontalContentAlignment="Stretch">
                                     <ListView.ItemTemplate>
                                         <DataTemplate DataType="{x:Type tabGroupScripts:TabInfo}">
-                                            <TextBlock Text="{Binding WindowName}"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <TextBlock Grid.Column="0" 
+                                                           Text="{Binding WindowName}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,4,0"/>
+                                                
+                                                <Button Grid.Column="1"
+                                                        Content="-"
+                                                        Width="18"
+                                                        Height="18"
+                                                        Padding="0"
+                                                        Click="RemoveFromGroupButton_OnClick"
+                                                        ToolTip="Remove from this group"/>
+                                            </Grid>
                                         </DataTemplate>
                                     </ListView.ItemTemplate>
                                 </ListView>

@@ -824,28 +824,38 @@ namespace ProperTabGroups.Subsystem
                 Debug.WriteLine("MoveTabBetweenGroups: TabInfo is null");
                 return;
             }
+            
+            bool bHasSource = sourceGroupGuid.HasValue;
+            bool bHasTarget = targetGroupGuid.HasValue;
 
             // moveing it to no group means unassigning it.
-            if (!targetGroupGuid.HasValue)
+            if (!bHasSource && !bHasTarget)
             {
-                MoveTabToUnassigned(tabInfo);
+                Debug.WriteLine("MoveTabBetweenGroups: Both source and target are null.");
+                return;
             }
 
-            if (sourceGroupGuid.HasValue && targetGroupGuid != null && sourceGroupGuid.Value == targetGroupGuid.Value)
+            if (bHasSource && bHasTarget && sourceGroupGuid.Value == targetGroupGuid.Value)
             {
                 return;
             }
 
+            if (bHasSource)
+            {
+                RemoveFilterFromTab(tabInfo, sourceGroupGuid.Value);
+            }
+
+            // if theres no target then all we're doing is removing from the source if we have a source
+            if (!bHasTarget)
+            {
+                return;
+            }
+            
             TabGroup existingGroup = null;
             if (!GetTabGroupFromGuid(targetGroupGuid.Value, ref existingGroup))
             {
                 Debug.WriteLine($"MoveTabBetweenGroups: Group with guid {targetGroupGuid} not found.");
                 return;
-            }
-
-            if (sourceGroupGuid.HasValue)
-            {
-                RemoveFilterFromTab(tabInfo, sourceGroupGuid.Value);
             }
 
             AddFilterToTab(tabInfo, targetGroupGuid.Value);
