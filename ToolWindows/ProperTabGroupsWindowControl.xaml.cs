@@ -17,7 +17,11 @@ namespace ProperTabGroups
         private readonly DTE _dte;
 
         private bool _bIsSelectionChangeProgrammatic;
-
+        
+        private Point _dragStartPoint;
+        private TabInfo _draggedTab;
+        private Guid? _dragSourceGroupGuid;
+        
         public DocumentWellManagementSubsystem ViewModel => DocumentWellManagementSubsystem.Instance;
 
         public ProperTabGroupsWindowControl()
@@ -259,7 +263,75 @@ namespace ProperTabGroups
             
             ViewModel.RemoveFilterFromTab(tabInfo, parentGroup.GroupGuid);
         }
-        
-        
+
+
+        private void TabList_PreviousMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _dragStartPoint = e.GetPosition(null);
+            _draggedTab = null;
+            _dragSourceGroupGuid = null;
+
+            if (e.OriginalSource is not DependencyObject dep)
+            {
+                return;
+            }
+            
+            var fe = dep as FrameworkElement;
+            if (fe == null)
+            {
+                return;
+            }
+
+            object dc = FindDataContextForFrameworkElement(fe);
+            if (dc is not TabInfo tabInfo)
+            {
+                return;
+            }
+
+            _draggedTab = tabInfo;
+            
+            // figure out the source group, null is unassigned
+            TabGroup parentGroup = FindParentTabGroup(dep);
+            _dragSourceGroupGuid = parentGroup?.GroupGuid;
+            
+        }
+
+        private void TabList_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton != MouseButtonState.Pressed) 
+            {
+                return;
+            }
+
+            if (_draggedTab == null)
+            {
+                return;
+            }
+            
+            Point currentPoint = e.GetPosition(null);
+            if (Math.Abs(currentPoint.X) < SystemParameters.MinimumHorizontalDragDistance &&
+                Math.Abs(currentPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
+            }
+            
+            //start dragging
+            var data = new DataObject(typeof(TabInfo), _draggedTab);
+            
+            DragDrop.DoDragDrop((DependencyObject)sender, data, DragDropEffects.Move);
+            
+            _draggedTab = null;
+            _dragSourceGroupGuid = null;
+        }
+
+        private void TabList_DragOver(object sender, DragEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void TabList_Drop(object sender, DragEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

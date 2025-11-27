@@ -861,7 +861,7 @@ namespace ProperTabGroups.Subsystem
             AddFilterToTab(tabInfo, targetGroupGuid.Value);
         }
 
-        private void MoveTabToUnassigned(TabInfo tabInfo)
+        public void MoveTabToUnassigned(TabInfo tabInfo)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 

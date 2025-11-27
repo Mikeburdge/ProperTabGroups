@@ -108,8 +108,20 @@
                     </Style>
                 </Setter.Value>
             </Setter>
+            
+            <Setter Property="AllowDrop" Value="True"/>
+            
             <EventSetter Event="SelectionChanged" Handler="ListView_SelectionChanged"/>
             <EventSetter Event="MouseDoubleClick" Handler="ModifyFilters_OnClick"/>
+            
+            <!-- Drag Source -->
+            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="TabList_PreviousMouseLeftButtonDown"/>
+            <EventSetter Event="MouseMove" Handler="TabList_MouseMove"/>
+            
+            <!-- Drop Target -->
+            <EventSetter Event="DragOver" Handler="TabList_DragOver"/>
+            <EventSetter Event="Drop" Handler="TabList_Drop"/>
+            
         </Style>
     </UserControl.Resources>
 
